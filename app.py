@@ -17,6 +17,7 @@ def demander_a_ia(prompt):
     }
     response = requests.post(API_URL, headers=headers, json=payload)
     resultat = response.json()
+    st.write(resultat)  # debug temporaire
     return resultat['choices'][0]['message']['content']
 
 
