@@ -3,3 +3,4 @@ pandas
 requests
 mediapipe
 opencv-python-headless
+streamlit-calendar
