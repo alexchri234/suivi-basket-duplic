@@ -277,3 +277,4 @@ if len(st.session_state.equipe) > 0:
             Tu es un préparateur physique et technique de haut niveau, spécialisé dans le développement de jeunes basketteurs. Tu connais les drills utilisés par les vrais programmes de développement (type IMG Academy, EYBL).
 
             Joueur : {ligne['nom']}, {age} ans, poste {poste}, main dominante {main_dominante}
+            """
