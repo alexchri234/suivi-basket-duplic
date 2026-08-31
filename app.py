@@ -231,3 +231,40 @@ if video_uploadee is not None:
                 st.write(analyse_video)
             else:
                 st.warning("Aucun angle détecté sur cette vidéo, essaie une autre vidéo ou un autre angle de caméra.")
+
+
+st.subheader("Programme d'entraînement personnalisé")
+
+if len(st.session_state.equipe) > 0:
+    joueur_programme = st.selectbox("Choisis un joueur", df_modifiable['nom'], key="select_programme")
+    niveau = st.selectbox("Niveau du joueur", ["Débutant", "Intermédiaire", "Avancé"])
+    objectifs = st.multiselect(
+        "Objectifs à travailler",
+        ["Tir", "Dribble", "Finition au panier", "Défense", "Condition physique"]
+    )
+    frequence = st.slider("Séances par semaine", min_value=1, max_value=6, value=3)
+    duree = st.slider("Durée du programme (semaines)", min_value=1, max_value=8, value=4)
+
+    if st.button("Générer le programme"):
+        if not objectifs:
+            st.warning("Choisis au moins un objectif avant de générer le programme.")
+        else:
+            ligne = df_modifiable[df_modifiable['nom'] == joueur_programme].iloc[0]
+            objectifs_texte = ", ".join(objectifs)
+
+            prompt_programme = f"""
+            Tu es un coach de basketball expérimenté qui crée des programmes d'entraînement personnalisés.
+
+            Joueur : {ligne['nom']}
+            Niveau : {niveau}
+            Objectifs à travailler : {objectifs_texte}
+            Fréquence : {frequence} séances par semaine
+            Durée du programme : {duree} semaines
+
+            Crée un programme d'entraînement structuré en français, avec pour chaque objectif des drills concrets et réalistes (exercices de tir, dribble, finition selon les objectifs choisis), adaptés au niveau {niveau}. Organise la réponse semaine par semaine, avec 2-3 exercices précis par séance. Reste concret et actionnable, pas de conseils vagues.
+            """
+            with st.spinner("Génération du programme..."):
+                programme = demander_a_ia(prompt_programme)
+            st.write(programme)
+else:
+    st.info("Ajoute au moins un joueur pour générer un programme.")
