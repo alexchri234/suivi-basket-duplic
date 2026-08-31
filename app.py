@@ -240,8 +240,16 @@ if len(st.session_state.equipe) > 0:
     niveau = st.selectbox("Niveau du joueur", ["Débutant", "Intermédiaire", "Avancé"])
     objectifs = st.multiselect(
         "Objectifs à travailler",
-        ["Tir", "Dribble", "Finition au panier", "Défense", "Condition physique"]
+        ["Tir", "Dribble", "Finition au panier", "Défense", "Force & Pliométrie"]
     )
+
+    blessures = ""
+    experience_muscu = "Non renseigné"
+    if "Force & Pliométrie" in objectifs:
+        st.warning("⚠️ Le volet physique nécessite quelques précisions pour rester sûr.")
+        blessures = st.text_input("Blessures récentes ou douleurs actuelles (laisse vide si aucune)")
+        experience_muscu = st.selectbox("Expérience en musculation/pliométrie", ["Débutant total", "Quelques mois", "Plus d'un an"])
+
     frequence = st.slider("Séances par semaine", min_value=1, max_value=6, value=3)
     duree = st.slider("Durée du programme (semaines)", min_value=1, max_value=8, value=4)
 
@@ -252,6 +260,13 @@ if len(st.session_state.equipe) > 0:
             ligne = df_modifiable[df_modifiable['nom'] == joueur_programme].iloc[0]
             objectifs_texte = ", ".join(objectifs)
 
+            consigne_physique = ""
+            if "Force & Pliométrie" in objectifs:
+                consigne_physique = f"""
+                Pour le volet physique (force, pliométrie, isométrie) : le joueur a pour expérience "{experience_muscu}" et signale comme blessure/douleur : "{blessures if blessures else 'aucune'}".
+                Reste prudent : privilégie des exercices au poids du corps ou charge légère pour un débutant, évite tout exercice à haut risque de blessure, et précise systématiquement que ce programme doit être validé par un préparateur physique ou un professionnel avant d'être suivi.
+                """
+
             prompt_programme = f"""
             Tu es un coach de basketball expérimenté qui crée des programmes d'entraînement personnalisés.
 
@@ -261,10 +276,29 @@ if len(st.session_state.equipe) > 0:
             Fréquence : {frequence} séances par semaine
             Durée du programme : {duree} semaines
 
-            Crée un programme d'entraînement structuré en français, avec pour chaque objectif des drills concrets et réalistes (exercices de tir, dribble, finition selon les objectifs choisis), adaptés au niveau {niveau}. Organise la réponse semaine par semaine, avec 2-3 exercices précis par séance. Reste concret et actionnable, pas de conseils vagues.
+            {consigne_physique}
+
+            Réponds UNIQUEMENT en JSON, sans aucun texte autour, sous cette forme exacte :
+            [
+              {{"semaine": 1, "jour": 1, "exercices": "description des exercices"}},
+              {{"semaine": 1, "jour": 2, "exercices": "description des exercices"}}
+            ]
+            Génère {frequence} entrées par semaine, sur {duree} semaines.
             """
             with st.spinner("Génération du programme..."):
-                programme = demander_a_ia(prompt_programme)
-            st.write(programme)
+                programme_brut = demander_a_ia(prompt_programme)
+
+            try:
+                programme_json = json.loads(programme_brut)
+                df_programme = pd.DataFrame(programme_json)
+                df_programme["note"] = ""
+                st.session_state.programme_actuel = df_programme
+            except:
+                st.error("L'IA n'a pas renvoyé un JSON valide, réessaie.")
+
+    if "programme_actuel" in st.session_state:
+        st.subheader("Programme (modifiable, avec notes)")
+        df_prog_modifiable = st.data_editor(st.session_state.programme_actuel, num_rows="dynamic", key="editeur_programme")
+        st.session_state.programme_actuel = df_prog_modifiable
 else:
     st.info("Ajoute au moins un joueur pour générer un programme.")
