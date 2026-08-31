@@ -233,10 +233,16 @@ if video_uploadee is not None:
                 st.warning("Aucun angle détecté sur cette vidéo, essaie une autre vidéo ou un autre angle de caméra.")
 
 
+from streamlit_calendar import calendar
+
 st.subheader("Programme d'entraînement personnalisé")
 
 if len(st.session_state.equipe) > 0:
     joueur_programme = st.selectbox("Choisis un joueur", df_modifiable['nom'], key="select_programme")
+    age = st.number_input("Âge du joueur", min_value=8, max_value=45, value=16)
+    poste = st.selectbox("Poste principal", ["Meneur", "Arrière", "Ailier", "Ailier fort", "Pivot"])
+    main_dominante = st.radio("Main dominante", ["Droite", "Gauche"])
+    points_faibles = st.text_area("Points faibles spécifiques observés (optionnel)", placeholder="Ex: perd souvent le ballon en contre-attaque, main gauche faible...")
     niveau = st.selectbox("Niveau du joueur", ["Débutant", "Intermédiaire", "Avancé"])
     objectifs = st.multiselect(
         "Objectifs à travailler",
@@ -268,37 +274,6 @@ if len(st.session_state.equipe) > 0:
                 """
 
             prompt_programme = f"""
-            Tu es un coach de basketball expérimenté qui crée des programmes d'entraînement personnalisés.
+            Tu es un préparateur physique et technique de haut niveau, spécialisé dans le développement de jeunes basketteurs. Tu connais les drills utilisés par les vrais programmes de développement (type IMG Academy, EYBL).
 
-            Joueur : {ligne['nom']}
-            Niveau : {niveau}
-            Objectifs à travailler : {objectifs_texte}
-            Fréquence : {frequence} séances par semaine
-            Durée du programme : {duree} semaines
-
-            {consigne_physique}
-
-            Réponds UNIQUEMENT en JSON, sans aucun texte autour, sous cette forme exacte :
-            [
-              {{"semaine": 1, "jour": 1, "exercices": "description des exercices"}},
-              {{"semaine": 1, "jour": 2, "exercices": "description des exercices"}}
-            ]
-            Génère {frequence} entrées par semaine, sur {duree} semaines.
-            """
-            with st.spinner("Génération du programme..."):
-                programme_brut = demander_a_ia(prompt_programme)
-
-            try:
-                programme_json = json.loads(programme_brut)
-                df_programme = pd.DataFrame(programme_json)
-                df_programme["note"] = ""
-                st.session_state.programme_actuel = df_programme
-            except:
-                st.error("L'IA n'a pas renvoyé un JSON valide, réessaie.")
-
-    if "programme_actuel" in st.session_state:
-        st.subheader("Programme (modifiable, avec notes)")
-        df_prog_modifiable = st.data_editor(st.session_state.programme_actuel, num_rows="dynamic", key="editeur_programme")
-        st.session_state.programme_actuel = df_prog_modifiable
-else:
-    st.info("Ajoute au moins un joueur pour générer un programme.")
+            Joueur : {ligne['nom']}, {age} ans, poste {poste}, main dominante {main_dominante}
