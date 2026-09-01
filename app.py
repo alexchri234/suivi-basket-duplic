@@ -287,7 +287,8 @@ if len(st.session_state.equipe) > 0:
             if "Force & Pliométrie" in objectifs:
                 consigne_physique = f"""
                 Pour le volet physique (force, pliométrie, isométrie) : le joueur a pour expérience "{experience_muscu}" et signale comme blessure/douleur : "{blessures if blessures else 'aucune'}".
-                Reste prudent : privilégie des exercices au poids du corps ou charge légère pour un débutant, évite tout exercice à haut risque de blessure, et précise systématiquement que ce programme doit être validé par un préparateur physique ou un professionnel avant d'être suivi.
+                Applique les principes recommandés par la NSCA pour les jeunes athlètes : développement multilatéral, technique avant charge, exercices au poids du corps ou à charge légère pour un débutant, mouvements pliométriques multi-directionnels (verticaux, horizontaux, latéraux) réalisés à effort maximal mais en petit volume (4-5 exercices, 1-2 min de repos entre séries), et au moins 24 à 48h de récupération entre deux séances à dominante physique.
+                Évite tout exercice à haut risque de blessure, et précise systématiquement que ce programme doit être validé par un préparateur physique ou un professionnel avant d'être suivi.
                 """
 
             jours_texte = "\n".join(
@@ -295,26 +296,41 @@ if len(st.session_state.equipe) > 0:
                 for s, jours in jours_par_semaine.items()
             )
 
-            prompt_programme = f"""
-            Tu es un préparateur physique et technique de haut niveau, spécialisé dans le développement de jeunes basketteurs. Tu connais les drills utilisés par les vrais programmes de développement (type IMG Academy, EYBL).
+            conseils_poste = {
+                "Meneur": "ball-handling sous pression, vision de jeu, prise de décision en transition, tir en sortie de dribble",
+                "Arrière": "tir en catch-and-shoot et en sortie de dribble, finition en contre-attaque, défense sur joueur extérieur",
+                "Ailier": "polyvalence : tir mi/longue distance, pénétration, finition, défense sur plusieurs postes",
+                "Ailier fort": "post moves, rebond, écrans, jeu dans la raquette, tir mi-distance / pick-and-pop",
+                "Pivot": "post moves, contre, rebond, finition près du cercle, agilité pour les rotations défensives"
+            }
+            consigne_poste = conseils_poste.get(poste, "les exigences générales de son poste")
 
-            Joueur : {ligne['nom']}, {age} ans, poste {poste}, main dominante {main_dominante}
-            Niveau : {niveau}
-            Points faibles observés : {points_faibles if points_faibles else "aucun signalé"}
-            Objectifs à travailler : {objectifs_texte}
-            Chaque séance doit durer environ {duree_seance} minutes.
+            prompt_programme = f"""
+            Tu es un préparateur physique et technique de haut niveau, spécialisé dans le développement de jeunes basketteurs. Tu t'appuies sur les méthodes des programmes de développement reconnus (type IMG Academy, EYBL) et sur les recommandations de la NSCA pour la préparation physique.
+
+            Profil du joueur :
+            - {ligne['nom']}, {age} ans, poste {poste}, main dominante {main_dominante} (donnée informative uniquement — ne construis pas le programme autour de la main forte)
+            - Niveau : {niveau}
+            - Statistiques actuelles : moyenne {ligne['moyenne']} pts, progression {ligne['progression']}, {ligne['assists']} assists, {ligne['rebonds']} rebonds, {ligne['steals']} steals, {ligne['turnovers']} pertes de balle
+            - Observations du coach (à pondérer avec les stats ci-dessus, pas à traiter comme LA priorité) : {points_faibles if points_faibles else "aucune observation particulière"}
+            - Objectifs à travailler : {objectifs_texte}
+            - Chaque séance dure environ {duree_seance} minutes.
+
+            Principe fondamental : fais progresser le joueur sur l'ENSEMBLE de son jeu. Renforce aussi ses points forts (pour qu'ils deviennent des armes encore plus fiables) et ses points moyens, pas seulement ses points faibles.
+
             {consigne_physique}
 
             Calendrier exact voulu par le coach (jours d'entraînement par semaine) :
             {jours_texte}
 
-            Génère une séance pour chacun de ces jours, dans l'ordre indiqué pour chaque semaine, en respectant strictement le nombre de séances par semaine.
-            Calibre le volume et le nombre d'exercices de chaque séance pour qu'elle tienne dans les {duree_seance} minutes prévues (échauffement inclus).
+            Génère une séance pour chacun de ces jours, dans l'ordre indiqué pour chaque semaine, en respectant strictement le nombre de séances par semaine. Calibre le volume pour que chaque séance tienne dans les {duree_seance} minutes (échauffement inclus).
 
-            Chaque séance doit être spécifique, travaillée et intéressante pour CE profil précis, pas un programme générique :
-            - Adapte les exercices au poste ({poste}), à la main dominante ({main_dominante}) et surtout aux points faibles observés ({points_faibles if points_faibles else "aucun signalé"}) — si une faiblesse est mentionnée, cible-la explicitement avec des drills dédiés.
-            - Donne des drills PRÉCIS ET NOMMÉS (pas de généralités comme "travail du tir" : donne le nom exact de l'exercice, par exemple "Mikan Drill", "Form Shooting à 5 points", "Cone Weave Dribbling", "Closeout Defense Drill", etc.), avec pour chacun le nombre de séries/répétitions ou la durée (ex : "4x10 répétitions", "3x30 secondes").
-            - Mélange des exercices fondamentaux et des variantes plus avancées selon le niveau du joueur ({niveau}), et fais progresser la difficulté au fil des semaines plutôt que de répéter les mêmes séances.
+            Méthodologie de construction des séances :
+            1. PRIORITÉ aux situations de match : la majorité de chaque séance doit reposer sur des exercices en situation réelle (1v1, 2v2, 3v3, jeux réduits, exercices avec défenseur actif, transitions, prises de décision sous pression) plutôt que sur des répétitions techniques isolées sans opposition.
+            2. Garde une base technique avec des drills PRÉCIS ET NOMMÉS (pas de généralités comme "travail du tir" : donne le nom exact, ex "Mikan Drill", "Form Shooting à 5 points", "Shell Drill défensif", "1v1 Closeout"), avec séries/répétitions ou durée pour chacun.
+            3. Adapte au poste du joueur : {consigne_poste}.
+            4. Calibre le niveau de progression annoncé à la durée réelle du programme ({duree} semaines) : sur un programme court, privilégie les progrès techniques et la lecture de jeu (les gains athlétiques significatifs prennent du temps) ; sur un programme plus long, une progression physique plus marquée devient crédible et peut être visée plus franchement. Dans tous les cas, n'annonce jamais de transformation spectaculaire d'une semaine à l'autre — la progression doit rester cohérente avec le nombre de semaines réellement disponibles.
+            5. Varie les exercices d'une séance à l'autre pour éviter la monotonie.
 
             Réponds UNIQUEMENT avec un JSON valide, sans aucun texte avant ou après, sous la forme exacte suivante (une entrée par séance, "jour" étant la position 1-indexée de la séance dans la liste de jours de sa semaine ci-dessus) :
             [{{"semaine": 1, "jour": 1, "exercices": "..."}}, {{"semaine": 1, "jour": 2, "exercices": "..."}}]
