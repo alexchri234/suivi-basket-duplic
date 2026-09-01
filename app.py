@@ -257,13 +257,28 @@ if len(st.session_state.equipe) > 0:
         blessures = st.text_input("Blessures récentes ou douleurs actuelles (laisse vide si aucune)")
         experience_muscu = st.selectbox("Expérience en musculation/pliométrie", ["Débutant total", "Quelques mois", "Plus d'un an"])
 
-    frequence = st.slider("Séances par semaine", min_value=1, max_value=6, value=3)
     duree = st.slider("Durée du programme (semaines)", min_value=1, max_value=8, value=4)
     duree_seance = st.slider("Durée de chaque séance (minutes)", min_value=15, max_value=180, value=60, step=5)
 
+    st.markdown("**Jours d'entraînement**")
+    st.caption("Choisis les jours semaine par semaine — ils n'ont pas besoin d'être les mêmes d'une semaine à l'autre.")
+    jours_semaine_liste = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+    jours_par_semaine = {}
+    for num_semaine in range(1, duree + 1):
+        with st.expander(f"Semaine {num_semaine}", expanded=(num_semaine == 1)):
+            jours_par_semaine[num_semaine] = st.multiselect(
+                "Jours d'entraînement",
+                jours_semaine_liste,
+                default=["Lundi", "Mercredi", "Vendredi"],
+                key=f"jours_semaine_{num_semaine}"
+            )
+
     if st.button("Générer le programme"):
+        nb_seances_total = sum(len(jours) for jours in jours_par_semaine.values())
         if not objectifs:
             st.warning("Choisis au moins un objectif avant de générer le programme.")
+        elif nb_seances_total == 0:
+            st.warning("Choisis au moins un jour d'entraînement sur au moins une semaine.")
         else:
             ligne = df_modifiable[df_modifiable['nom'] == joueur_programme].iloc[0]
             objectifs_texte = ", ".join(objectifs)
@@ -275,6 +290,11 @@ if len(st.session_state.equipe) > 0:
                 Reste prudent : privilégie des exercices au poids du corps ou charge légère pour un débutant, évite tout exercice à haut risque de blessure, et précise systématiquement que ce programme doit être validé par un préparateur physique ou un professionnel avant d'être suivi.
                 """
 
+            jours_texte = "\n".join(
+                f"- Semaine {s} : {', '.join(jours) if jours else 'aucune séance'} ({len(jours)} séance(s)), dans cet ordre"
+                for s, jours in jours_par_semaine.items()
+            )
+
             prompt_programme = f"""
             Tu es un préparateur physique et technique de haut niveau, spécialisé dans le développement de jeunes basketteurs. Tu connais les drills utilisés par les vrais programmes de développement (type IMG Academy, EYBL).
 
@@ -282,15 +302,21 @@ if len(st.session_state.equipe) > 0:
             Niveau : {niveau}
             Points faibles observés : {points_faibles if points_faibles else "aucun signalé"}
             Objectifs à travailler : {objectifs_texte}
-            Fréquence : {frequence} séance(s) par semaine, sur {duree} semaine(s) au total. Chaque séance doit durer environ {duree_seance} minutes.
+            Chaque séance doit durer environ {duree_seance} minutes.
             {consigne_physique}
 
-            Construis un programme d'entraînement complet couvrant les {duree} semaines, à raison de {frequence} séance(s) par semaine.
-            Calibre le volume et le nombre d'exercices de chaque séance pour qu'elle tienne dans les {duree_seance} minutes prévues (échauffement inclus).
-            Pour chaque séance, donne des drills PRÉCIS ET NOMMÉS (pas de généralités comme "travail du tir" : donne le nom exact de l'exercice, par exemple "Mikan Drill", "Form Shooting à 5 points", "Cone Weave Dribbling", "Closeout Defense Drill", etc.).
-            Mélange des exercices fondamentaux et des variantes plus avancées selon le niveau du joueur ({niveau}).
+            Calendrier exact voulu par le coach (jours d'entraînement par semaine) :
+            {jours_texte}
 
-            Réponds UNIQUEMENT avec un JSON valide, sans aucun texte avant ou après, sous la forme exacte suivante (une entrée par séance, pour toutes les séances de toutes les semaines) :
+            Génère une séance pour chacun de ces jours, dans l'ordre indiqué pour chaque semaine, en respectant strictement le nombre de séances par semaine.
+            Calibre le volume et le nombre d'exercices de chaque séance pour qu'elle tienne dans les {duree_seance} minutes prévues (échauffement inclus).
+
+            Chaque séance doit être spécifique, travaillée et intéressante pour CE profil précis, pas un programme générique :
+            - Adapte les exercices au poste ({poste}), à la main dominante ({main_dominante}) et surtout aux points faibles observés ({points_faibles if points_faibles else "aucun signalé"}) — si une faiblesse est mentionnée, cible-la explicitement avec des drills dédiés.
+            - Donne des drills PRÉCIS ET NOMMÉS (pas de généralités comme "travail du tir" : donne le nom exact de l'exercice, par exemple "Mikan Drill", "Form Shooting à 5 points", "Cone Weave Dribbling", "Closeout Defense Drill", etc.), avec pour chacun le nombre de séries/répétitions ou la durée (ex : "4x10 répétitions", "3x30 secondes").
+            - Mélange des exercices fondamentaux et des variantes plus avancées selon le niveau du joueur ({niveau}), et fais progresser la difficulté au fil des semaines plutôt que de répéter les mêmes séances.
+
+            Réponds UNIQUEMENT avec un JSON valide, sans aucun texte avant ou après, sous la forme exacte suivante (une entrée par séance, "jour" étant la position 1-indexée de la séance dans la liste de jours de sa semaine ci-dessus) :
             [{{"semaine": 1, "jour": 1, "exercices": "..."}}, {{"semaine": 1, "jour": 2, "exercices": "..."}}]
             """
 
@@ -305,12 +331,17 @@ if len(st.session_state.equipe) > 0:
 
             try:
                 seances = json.loads(texte_json)
-                date_debut = datetime.date.today()
+                indice_jour_semaine = {"Lundi": 0, "Mardi": 1, "Mercredi": 2, "Jeudi": 3, "Vendredi": 4, "Samedi": 5, "Dimanche": 6}
+                aujourdhui = datetime.date.today()
+                lundi_semaine_1 = aujourdhui - datetime.timedelta(days=aujourdhui.weekday())
+
                 for seance in seances:
                     semaine = seance.get("semaine", 1)
                     jour = seance.get("jour", 1)
-                    decalage = (semaine - 1) * 7 + round((jour - 1) * 7 / max(frequence, 1))
-                    seance["date"] = (date_debut + datetime.timedelta(days=decalage)).isoformat()
+                    jours_choisis = jours_par_semaine.get(semaine, [])
+                    nom_jour = jours_choisis[jour - 1] if 0 < jour <= len(jours_choisis) else (jours_choisis[0] if jours_choisis else "Lundi")
+                    lundi_semaine = lundi_semaine_1 + datetime.timedelta(weeks=semaine - 1)
+                    seance["date"] = (lundi_semaine + datetime.timedelta(days=indice_jour_semaine[nom_jour])).isoformat()
                     seance["note"] = ""
 
                 st.session_state.programme_entrainement = pd.DataFrame(seances)
@@ -344,9 +375,21 @@ if "programme_entrainement" in st.session_state:
     if "seance_selectionnee" in st.session_state:
         idx = st.session_state.seance_selectionnee
         seance = df_programme.loc[idx]
-        st.subheader(f"Semaine {seance['semaine']} — Séance {seance['jour']}")
-        st.write(seance["exercices"])
-        nouvelle_note = st.text_area("Note (douleur, ressenti, résultat)", value=seance["note"], key=f"note_{idx}")
-        if st.button("Sauvegarder la note", key=f"save_note_{idx}"):
-            st.session_state.programme_entrainement.loc[idx, "note"] = nouvelle_note
-            st.success("Note sauvegardée.")
+        date_seance = datetime.date.fromisoformat(seance["date"])
+        jours_fr = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+
+        with st.container(border=True):
+            col_titre, col_date = st.columns([3, 2])
+            with col_titre:
+                st.markdown(f"#### Semaine {seance['semaine']} — Séance {seance['jour']}")
+            with col_date:
+                st.markdown(f"<div style='text-align:right; color:gray;'>{jours_fr[date_seance.weekday()]} {date_seance.strftime('%d/%m/%Y')}</div>", unsafe_allow_html=True)
+
+            st.divider()
+            st.markdown(seance["exercices"])
+            st.divider()
+
+            nouvelle_note = st.text_area("Note (douleur, ressenti, résultat)", value=seance["note"], key=f"note_{idx}")
+            if st.button("Sauvegarder la note", key=f"save_note_{idx}"):
+                st.session_state.programme_entrainement.loc[idx, "note"] = nouvelle_note
+                st.success("Note sauvegardée.")
