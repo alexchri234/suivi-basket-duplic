@@ -21,8 +21,8 @@ def demander_a_ia(prompt):
 
 
 
-BIN_ID = "6a8f5989da38895dfe152e98"
-MASTER_KEY = "$2a$10$YT4KMEuNxed9CaCHb5TrWebu99HF.eTn3e2r6.1Kdu7dm2rqi.spy"
+BIN_ID = st.secrets["BIN_ID"]
+MASTER_KEY = st.secrets["MASTER_KEY"]
 JSONBIN_URL = f"https://api.jsonbin.io/v3/b/{BIN_ID}"
 jsonbin_headers = {"X-Master-Key": MASTER_KEY, "Content-Type": "application/json"}
 
