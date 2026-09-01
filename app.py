@@ -259,6 +259,7 @@ if len(st.session_state.equipe) > 0:
 
     frequence = st.slider("Séances par semaine", min_value=1, max_value=6, value=3)
     duree = st.slider("Durée du programme (semaines)", min_value=1, max_value=8, value=4)
+    duree_seance = st.slider("Durée de chaque séance (minutes)", min_value=15, max_value=180, value=60, step=5)
 
     if st.button("Générer le programme"):
         if not objectifs:
@@ -281,10 +282,11 @@ if len(st.session_state.equipe) > 0:
             Niveau : {niveau}
             Points faibles observés : {points_faibles if points_faibles else "aucun signalé"}
             Objectifs à travailler : {objectifs_texte}
-            Fréquence : {frequence} séance(s) par semaine, sur {duree} semaine(s) au total.
+            Fréquence : {frequence} séance(s) par semaine, sur {duree} semaine(s) au total. Chaque séance doit durer environ {duree_seance} minutes.
             {consigne_physique}
 
             Construis un programme d'entraînement complet couvrant les {duree} semaines, à raison de {frequence} séance(s) par semaine.
+            Calibre le volume et le nombre d'exercices de chaque séance pour qu'elle tienne dans les {duree_seance} minutes prévues (échauffement inclus).
             Pour chaque séance, donne des drills PRÉCIS ET NOMMÉS (pas de généralités comme "travail du tir" : donne le nom exact de l'exercice, par exemple "Mikan Drill", "Form Shooting à 5 points", "Cone Weave Dribbling", "Closeout Defense Drill", etc.).
             Mélange des exercices fondamentaux et des variantes plus avancées selon le niveau du joueur ({niveau}).
 
