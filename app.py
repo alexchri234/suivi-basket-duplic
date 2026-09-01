@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import requests
 import json
+import datetime
 
 
 st.title("Suivi des joueurs — Prototype")
@@ -277,4 +278,73 @@ if len(st.session_state.equipe) > 0:
             Tu es un préparateur physique et technique de haut niveau, spécialisé dans le développement de jeunes basketteurs. Tu connais les drills utilisés par les vrais programmes de développement (type IMG Academy, EYBL).
 
             Joueur : {ligne['nom']}, {age} ans, poste {poste}, main dominante {main_dominante}
+            Niveau : {niveau}
+            Points faibles observés : {points_faibles if points_faibles else "aucun signalé"}
+            Objectifs à travailler : {objectifs_texte}
+            Fréquence : {frequence} séance(s) par semaine, sur {duree} semaine(s) au total.
+            {consigne_physique}
+
+            Construis un programme d'entraînement complet couvrant les {duree} semaines, à raison de {frequence} séance(s) par semaine.
+            Pour chaque séance, donne des drills PRÉCIS ET NOMMÉS (pas de généralités comme "travail du tir" : donne le nom exact de l'exercice, par exemple "Mikan Drill", "Form Shooting à 5 points", "Cone Weave Dribbling", "Closeout Defense Drill", etc.).
+            Mélange des exercices fondamentaux et des variantes plus avancées selon le niveau du joueur ({niveau}).
+
+            Réponds UNIQUEMENT avec un JSON valide, sans aucun texte avant ou après, sous la forme exacte suivante (une entrée par séance, pour toutes les séances de toutes les semaines) :
+            [{{"semaine": 1, "jour": 1, "exercices": "..."}}, {{"semaine": 1, "jour": 2, "exercices": "..."}}]
             """
+
+            with st.spinner("Génération du programme..."):
+                reponse_programme = demander_a_ia(prompt_programme)
+
+            texte_json = reponse_programme.strip()
+            if texte_json.startswith("```"):
+                texte_json = texte_json.strip("`")
+                if texte_json.lower().startswith("json"):
+                    texte_json = texte_json[4:]
+
+            try:
+                seances = json.loads(texte_json)
+                date_debut = datetime.date.today()
+                for seance in seances:
+                    semaine = seance.get("semaine", 1)
+                    jour = seance.get("jour", 1)
+                    decalage = (semaine - 1) * 7 + round((jour - 1) * 7 / max(frequence, 1))
+                    seance["date"] = (date_debut + datetime.timedelta(days=decalage)).isoformat()
+                    seance["note"] = ""
+
+                st.session_state.programme_entrainement = pd.DataFrame(seances)
+                st.success("Programme généré !")
+            except (json.JSONDecodeError, TypeError, KeyError):
+                st.error("L'IA n'a pas renvoyé un JSON valide, réessaie.")
+                st.text(reponse_programme)
+
+if "programme_entrainement" in st.session_state:
+    df_programme = st.session_state.programme_entrainement
+
+    evenements = [
+        {
+            "title": f"Semaine {row['semaine']} — Séance {row['jour']}",
+            "start": row["date"],
+            "end": row["date"],
+            "extendedProps": {"index": int(index)}
+        }
+        for index, row in df_programme.iterrows()
+    ]
+
+    etat_calendrier = calendar(
+        events=evenements,
+        options={"initialView": "dayGridMonth", "locale": "fr"},
+        key="calendrier_programme"
+    )
+
+    if etat_calendrier.get("eventClick"):
+        st.session_state.seance_selectionnee = etat_calendrier["eventClick"]["event"]["extendedProps"]["index"]
+
+    if "seance_selectionnee" in st.session_state:
+        idx = st.session_state.seance_selectionnee
+        seance = df_programme.loc[idx]
+        st.subheader(f"Semaine {seance['semaine']} — Séance {seance['jour']}")
+        st.write(seance["exercices"])
+        nouvelle_note = st.text_area("Note (douleur, ressenti, résultat)", value=seance["note"], key=f"note_{idx}")
+        if st.button("Sauvegarder la note", key=f"save_note_{idx}"):
+            st.session_state.programme_entrainement.loc[idx, "note"] = nouvelle_note
+            st.success("Note sauvegardée.")
