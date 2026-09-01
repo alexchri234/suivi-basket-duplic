@@ -28,7 +28,6 @@ jsonbin_headers = {"X-Master-Key": MASTER_KEY, "Content-Type": "application/json
 
 def charger_donnees():
     response = requests.get(JSONBIN_URL + "/latest", headers=jsonbin_headers)
-    st.write(response.json())  # DEBUG temporaire
     return response.json()["record"]
 
 def sauvegarder_donnees(donnees):
