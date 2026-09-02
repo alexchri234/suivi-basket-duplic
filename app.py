@@ -318,7 +318,7 @@ if len(st.session_state.equipe) > 0:
                 consigne_physique = f"""
                 Pour le volet physique (force, pliométrie, isométrie) : le joueur a pour expérience "{experience_muscu}" et signale comme blessure/douleur : "{blessures if blessures else 'aucune'}".
                 Applique les principes recommandés par la NSCA pour les jeunes athlètes : développement multilatéral, technique avant charge, exercices au poids du corps ou à charge légère pour un débutant, mouvements pliométriques multi-directionnels (verticaux, horizontaux, latéraux) réalisés à effort maximal, et au moins 24 à 48h de récupération entre deux séances à dominante physique.
-                Inclue AU MINIMUM 4 à 6 exercices distincts dans le volet physique de chaque séance concernée (jamais seulement 1 ou 2), pour que la séance ait un vrai volume d'entraînement, conformément aux standards NSCA.
+                RÈGLE STRICTE : chaque séance qui inclut du travail physique doit comporter AU MINIMUM 4 exercices distincts de ce volet (idéalement 4 à 6), jamais seulement 1 ou 2 — sinon ce n'est pas un vrai volume d'entraînement. Si le nombre de séances disponibles dans la semaine le permet, privilégie plutôt de DÉDIER certaines séances entièrement au physique (4 à 6 exercices ce jour-là, rien d'autre) et de garder les autres séances entièrement pour les compétences basket, plutôt que de disperser un ou deux exercices physiques dans chaque séance. Répartis ce choix intelligemment selon le nombre de jours disponibles chaque semaine.
                 Évite tout exercice à haut risque de blessure, et précise systématiquement que ce programme doit être validé par un préparateur physique ou un professionnel avant d'être suivi.
                 """
 
@@ -338,7 +338,7 @@ if len(st.session_state.equipe) > 0:
 
             banque_drills = """
             Exemples de drills reconnus à utiliser ou à t'en inspirer (piocher largement dedans, ne pas se limiter à un ou deux) :
-            - Tir : Form Shooting près du panier (à intégrer en DÉBUT de programme, quel que soit le niveau), BEEF Shooting Drill, Catch and Shoot 5 spots, Off the Dribble Pull-up, Free Throw Routine, Around the World, Shooting off screens.
+            - Tir : Form Shooting près du panier (à intégrer en DÉBUT de programme, quel que soit le niveau), BEEF Shooting Drill, Catch and Shoot 5 spots, Off the Dribble Pull-up, Free Throw Routine, Around the World, Shooting off screens, Catch and Shoot 3-Point Series, Off-Dribble 3-Point Pull-up, Spot-Up 3-Point Shooting, Elevator Screen 3PT.
             - Dribble : Two-Ball Dribbling, Cone Weave Dribbling, Tennis Ball Dribbling (main faible), Full Speed Crossover Series, Figure 8 Dribble, In-and-Out Series.
             - Finition : Mikan Drill, Reverse Mikan, Euro Step Finishing, Floater Drill, Contact Finishing (avec un partenaire ou un pad).
             - Défense : Defensive Slide Drill, Closeout Drill, Shell Drill, Mirror Drill, Zig-Zag Defense.
@@ -370,11 +370,12 @@ if len(st.session_state.equipe) > 0:
 
             Méthodologie de construction des séances :
             1. PRIORITÉ aux situations de match : la majorité de chaque séance doit reposer sur des exercices en situation réelle (1v1, 2v2, 3v3, jeux réduits, exercices avec défenseur actif, transitions, prises de décision sous pression) plutôt que sur des répétitions techniques isolées sans opposition.
-            2. Garde une base technique solide et PROFESSIONNELLE avec des drills PRÉCIS ET NOMMÉS (pas de généralités comme "travail du tir"). Si "Tir" fait partie des objectifs, un exercice de Form Shooting (ou équivalent de calibrage technique) doit apparaître dès les premières séances du programme, quel que soit le niveau.
+            2. Garde une base technique solide et PROFESSIONNELLE avec des drills PRÉCIS ET NOMMÉS (pas de généralités comme "travail du tir"). Utilise le nom internationalement reconnu de chaque drill (généralement en anglais, tel qu'utilisé dans le coaching, ex "Mikan Drill", "Shell Drill") même si le reste de la séance est décrit en français : ce sont des noms standards pour lesquels il existe de vraies vidéos de démonstration. Si "Tir" fait partie des objectifs, un exercice de Form Shooting (ou équivalent de calibrage technique) doit apparaître dès les premières séances du programme, quel que soit le niveau.
             3. Adapte au poste du joueur : {consigne_poste}.
             4. Adapte la difficulté et la complexité des drills au niveau du joueur décrit ci-dessus ({niveau_choisi}) : plus de drills fondamentaux et de répétitions guidées pour un profil débutant, plus de variantes avancées, de contraintes (temps, opposition, prise de décision) et de combinaisons de mouvements pour un profil avancé.
             5. Calibre le niveau de progression annoncé à la durée réelle du programme ({duree} semaines) : sur un programme court, privilégie les progrès techniques et la lecture de jeu (les gains athlétiques significatifs prennent du temps) ; sur un programme plus long, une progression physique plus marquée devient crédible et peut être visée plus franchement. Dans tous les cas, n'annonce jamais de transformation spectaculaire d'une semaine à l'autre.
             6. Varie les exercices d'une séance à l'autre pour éviter la monotonie.
+            7. Couvre l'ENSEMBLE des sous-aspects de chaque objectif sélectionné sur la durée du programme, pas seulement une partie. Exemple pour "Tir" : varie les distances (près du cercle, mi-distance, ET tir à 3 points si le niveau du joueur le permet) et les situations (catch and shoot, sortie de dribble, sous contestation défensive) — un joueur de niveau avancé qui travaille son tir doit voir du tir à 3 points dans son programme. Le même principe s'applique aux autres objectifs (Dribble, Finition, Défense) : ne te limite pas à un seul type de situation ou de distance répété d'une séance à l'autre.
 
             Pour chaque séance, décompose les exercices en une LISTE d'objets structurés (pas un seul bloc de texte), chacun avec :
             - "nom" : le nom précis du drill
@@ -462,7 +463,7 @@ if len(st.session_state.equipe) > 0:
                     if exercice.get("series_reps"):
                         st.caption(exercice["series_reps"])
                     st.write(exercice.get("description", ""))
-                    requete_video = urllib.parse.quote(f"{exercice.get('nom', '')} basketball drill tutorial")
+                    requete_video = urllib.parse.quote(f'"{exercice.get("nom", "")}" basketball drill')
                     st.markdown(f"[Voir des vidéos de démonstration](https://www.youtube.com/results?search_query={requete_video})")
                     st.markdown("")
 
