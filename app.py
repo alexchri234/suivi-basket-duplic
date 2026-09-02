@@ -3,6 +3,7 @@ import pandas as pd
 import requests
 import json
 import datetime
+import urllib.parse
 
 
 st.title("Suivi des joueurs — Prototype")
@@ -83,8 +84,28 @@ def sauvegarder_equipe(equipe):
     donnees["equipes"][st.session_state.utilisateur_connecte] = equipe
     sauvegarder_donnees(donnees)
 
+def charger_programmes():
+    donnees = charger_donnees()
+    return donnees.get("programmes", {}).get(st.session_state.utilisateur_connecte, {})
+
+def sauvegarder_programme(nom_joueur, seances):
+    donnees = charger_donnees()
+    donnees.setdefault("programmes", {})
+    donnees["programmes"].setdefault(st.session_state.utilisateur_connecte, {})
+    donnees["programmes"][st.session_state.utilisateur_connecte][nom_joueur] = seances
+    sauvegarder_donnees(donnees)
+
 if "equipe" not in st.session_state:
     st.session_state.equipe = charger_equipe()
+
+if "programmes" not in st.session_state:
+    st.session_state.programmes = {
+        nom_joueur: pd.DataFrame(seances)
+        for nom_joueur, seances in charger_programmes().items()
+    }
+
+if "seance_selectionnee" not in st.session_state:
+    st.session_state.seance_selectionnee = {}
 
 st.subheader("Ajouter un joueur")
 
@@ -244,7 +265,16 @@ if len(st.session_state.equipe) > 0:
     poste = st.selectbox("Poste principal", ["Meneur", "Arrière", "Ailier", "Ailier fort", "Pivot"])
     main_dominante = st.radio("Main dominante", ["Droite", "Gauche"])
     points_faibles = st.text_area("Points faibles spécifiques observés (optionnel)", placeholder="Ex: perd souvent le ballon en contre-attaque, main gauche faible...")
-    niveau = st.selectbox("Niveau du joueur", ["Débutant", "Intermédiaire", "Avancé"])
+
+    niveaux_definitions = {
+        "Débutant": "Débutant : moins de 2 ans de pratique organisée. Ne maîtrise pas encore les fondamentaux de façon fiable — perd parfois le ballon sur un dribble simple, la forme de tir n'est pas stable, ne connaît pas encore les schémas défensifs de base.",
+        "Intermédiaire": "Intermédiaire : 2 à 4 ans de pratique en club/compétition. Exécute les fondamentaux avec une bonne consistance (dribble des deux mains, forme de tir correcte, passes précises) mais manque encore de fiabilité sous pression ou en match serré.",
+        "Avancé": "Avancé : 4 ans ou plus de pratique en compétition régulière. Maîtrise les fondamentaux de façon fiable même sous pression, exécute des mouvements avancés (crossover, stepback, post moves, lecture de la défense) et cherche à peaufiner des détails techniques ou tactiques fins."
+    }
+    niveau_choisi = st.selectbox("Niveau du joueur", list(niveaux_definitions.keys()))
+    st.caption(niveaux_definitions[niveau_choisi])
+    niveau = niveaux_definitions[niveau_choisi]
+
     objectifs = st.multiselect(
         "Objectifs à travailler",
         ["Tir", "Dribble", "Finition au panier", "Défense", "Force & Pliométrie"]
@@ -287,7 +317,8 @@ if len(st.session_state.equipe) > 0:
             if "Force & Pliométrie" in objectifs:
                 consigne_physique = f"""
                 Pour le volet physique (force, pliométrie, isométrie) : le joueur a pour expérience "{experience_muscu}" et signale comme blessure/douleur : "{blessures if blessures else 'aucune'}".
-                Applique les principes recommandés par la NSCA pour les jeunes athlètes : développement multilatéral, technique avant charge, exercices au poids du corps ou à charge légère pour un débutant, mouvements pliométriques multi-directionnels (verticaux, horizontaux, latéraux) réalisés à effort maximal mais en petit volume (4-5 exercices, 1-2 min de repos entre séries), et au moins 24 à 48h de récupération entre deux séances à dominante physique.
+                Applique les principes recommandés par la NSCA pour les jeunes athlètes : développement multilatéral, technique avant charge, exercices au poids du corps ou à charge légère pour un débutant, mouvements pliométriques multi-directionnels (verticaux, horizontaux, latéraux) réalisés à effort maximal, et au moins 24 à 48h de récupération entre deux séances à dominante physique.
+                Inclue AU MINIMUM 4 à 6 exercices distincts dans le volet physique de chaque séance concernée (jamais seulement 1 ou 2), pour que la séance ait un vrai volume d'entraînement, conformément aux standards NSCA.
                 Évite tout exercice à haut risque de blessure, et précise systématiquement que ce programme doit être validé par un préparateur physique ou un professionnel avant d'être suivi.
                 """
 
@@ -304,6 +335,16 @@ if len(st.session_state.equipe) > 0:
                 "Pivot": "post moves, contre, rebond, finition près du cercle, agilité pour les rotations défensives"
             }
             consigne_poste = conseils_poste.get(poste, "les exigences générales de son poste")
+
+            banque_drills = """
+            Exemples de drills reconnus à utiliser ou à t'en inspirer (piocher largement dedans, ne pas se limiter à un ou deux) :
+            - Tir : Form Shooting près du panier (à intégrer en DÉBUT de programme, quel que soit le niveau), BEEF Shooting Drill, Catch and Shoot 5 spots, Off the Dribble Pull-up, Free Throw Routine, Around the World, Shooting off screens.
+            - Dribble : Two-Ball Dribbling, Cone Weave Dribbling, Tennis Ball Dribbling (main faible), Full Speed Crossover Series, Figure 8 Dribble, In-and-Out Series.
+            - Finition : Mikan Drill, Reverse Mikan, Euro Step Finishing, Floater Drill, Contact Finishing (avec un partenaire ou un pad).
+            - Défense : Defensive Slide Drill, Closeout Drill, Shell Drill, Mirror Drill, Zig-Zag Defense.
+            - Situations de match : 1v1 Live, 2v2 Live, 3v3 Half Court, Shell Drill 4v4, Small-Sided Game (score limité), Transition 3v2.
+            - Force & Pliométrie : Squat au poids du corps, Box Jump, Broad Jump, Lateral Bound, Plank, Depth Jump (avancé), Single-leg RDL.
+            """
 
             prompt_programme = f"""
             Tu es un préparateur physique et technique de haut niveau, spécialisé dans le développement de jeunes basketteurs. Tu t'appuies sur les méthodes des programmes de développement reconnus (type IMG Academy, EYBL) et sur les recommandations de la NSCA pour la préparation physique.
@@ -325,15 +366,23 @@ if len(st.session_state.equipe) > 0:
 
             Génère une séance pour chacun de ces jours, dans l'ordre indiqué pour chaque semaine, en respectant strictement le nombre de séances par semaine. Calibre le volume pour que chaque séance tienne dans les {duree_seance} minutes (échauffement inclus).
 
+            {banque_drills}
+
             Méthodologie de construction des séances :
             1. PRIORITÉ aux situations de match : la majorité de chaque séance doit reposer sur des exercices en situation réelle (1v1, 2v2, 3v3, jeux réduits, exercices avec défenseur actif, transitions, prises de décision sous pression) plutôt que sur des répétitions techniques isolées sans opposition.
-            2. Garde une base technique avec des drills PRÉCIS ET NOMMÉS (pas de généralités comme "travail du tir" : donne le nom exact, ex "Mikan Drill", "Form Shooting à 5 points", "Shell Drill défensif", "1v1 Closeout"), avec séries/répétitions ou durée pour chacun.
+            2. Garde une base technique solide et PROFESSIONNELLE avec des drills PRÉCIS ET NOMMÉS (pas de généralités comme "travail du tir"). Si "Tir" fait partie des objectifs, un exercice de Form Shooting (ou équivalent de calibrage technique) doit apparaître dès les premières séances du programme, quel que soit le niveau.
             3. Adapte au poste du joueur : {consigne_poste}.
-            4. Calibre le niveau de progression annoncé à la durée réelle du programme ({duree} semaines) : sur un programme court, privilégie les progrès techniques et la lecture de jeu (les gains athlétiques significatifs prennent du temps) ; sur un programme plus long, une progression physique plus marquée devient crédible et peut être visée plus franchement. Dans tous les cas, n'annonce jamais de transformation spectaculaire d'une semaine à l'autre — la progression doit rester cohérente avec le nombre de semaines réellement disponibles.
-            5. Varie les exercices d'une séance à l'autre pour éviter la monotonie.
+            4. Adapte la difficulté et la complexité des drills au niveau du joueur décrit ci-dessus ({niveau_choisi}) : plus de drills fondamentaux et de répétitions guidées pour un profil débutant, plus de variantes avancées, de contraintes (temps, opposition, prise de décision) et de combinaisons de mouvements pour un profil avancé.
+            5. Calibre le niveau de progression annoncé à la durée réelle du programme ({duree} semaines) : sur un programme court, privilégie les progrès techniques et la lecture de jeu (les gains athlétiques significatifs prennent du temps) ; sur un programme plus long, une progression physique plus marquée devient crédible et peut être visée plus franchement. Dans tous les cas, n'annonce jamais de transformation spectaculaire d'une semaine à l'autre.
+            6. Varie les exercices d'une séance à l'autre pour éviter la monotonie.
+
+            Pour chaque séance, décompose les exercices en une LISTE d'objets structurés (pas un seul bloc de texte), chacun avec :
+            - "nom" : le nom précis du drill
+            - "series_reps" : le nombre de séries/répétitions ou la durée (ex : "4x10 répétitions", "3x30 secondes", "3 possessions")
+            - "description" : 1 à 2 phrases claires expliquant COMMENT exécuter l'exercice, écrites pour qu'un débutant puisse comprendre et réaliser le mouvement sans supervision.
 
             Réponds UNIQUEMENT avec un JSON valide, sans aucun texte avant ou après, sous la forme exacte suivante (une entrée par séance, "jour" étant la position 1-indexée de la séance dans la liste de jours de sa semaine ci-dessus) :
-            [{{"semaine": 1, "jour": 1, "exercices": "..."}}, {{"semaine": 1, "jour": 2, "exercices": "..."}}]
+            [{{"semaine": 1, "jour": 1, "exercices": [{{"nom": "...", "series_reps": "...", "description": "..."}}, {{"nom": "...", "series_reps": "...", "description": "..."}}]}}]
             """
 
             with st.spinner("Génération du programme..."):
@@ -359,53 +408,90 @@ if len(st.session_state.equipe) > 0:
                     lundi_semaine = lundi_semaine_1 + datetime.timedelta(weeks=semaine - 1)
                     seance["date"] = (lundi_semaine + datetime.timedelta(days=indice_jour_semaine[nom_jour])).isoformat()
                     seance["note"] = ""
+                    if isinstance(seance.get("exercices"), str):
+                        seance["exercices"] = [{"nom": "Séance", "series_reps": "", "description": seance["exercices"]}]
 
-                st.session_state.programme_entrainement = pd.DataFrame(seances)
-                st.success("Programme généré !")
+                st.session_state.programmes[joueur_programme] = pd.DataFrame(seances)
+                sauvegarder_programme(joueur_programme, seances)
+                st.session_state.seance_selectionnee.pop(joueur_programme, None)
+                st.success("Programme généré et sauvegardé !")
             except (json.JSONDecodeError, TypeError, KeyError):
                 st.error("L'IA n'a pas renvoyé un JSON valide, réessaie.")
                 st.text(reponse_programme)
 
-if "programme_entrainement" in st.session_state:
-    df_programme = st.session_state.programme_entrainement
+    if joueur_programme in st.session_state.programmes:
+        df_programme = st.session_state.programmes[joueur_programme]
 
-    evenements = [
-        {
-            "title": f"Semaine {row['semaine']} — Séance {row['jour']}",
-            "start": row["date"],
-            "end": row["date"],
-            "extendedProps": {"index": int(index)}
-        }
-        for index, row in df_programme.iterrows()
-    ]
+        evenements = [
+            {
+                "title": f"Semaine {row['semaine']} — Séance {row['jour']}",
+                "start": row["date"],
+                "end": row["date"],
+                "extendedProps": {"index": int(index)}
+            }
+            for index, row in df_programme.iterrows()
+        ]
 
-    etat_calendrier = calendar(
-        events=evenements,
-        options={"initialView": "dayGridMonth", "locale": "fr"},
-        key="calendrier_programme"
-    )
+        etat_calendrier = calendar(
+            events=evenements,
+            options={"initialView": "dayGridMonth", "locale": "fr"},
+            key=f"calendrier_programme_{joueur_programme}"
+        )
 
-    if etat_calendrier.get("eventClick"):
-        st.session_state.seance_selectionnee = etat_calendrier["eventClick"]["event"]["extendedProps"]["index"]
+        if etat_calendrier.get("eventClick"):
+            st.session_state.seance_selectionnee[joueur_programme] = etat_calendrier["eventClick"]["event"]["extendedProps"]["index"]
 
-    if "seance_selectionnee" in st.session_state:
-        idx = st.session_state.seance_selectionnee
-        seance = df_programme.loc[idx]
-        date_seance = datetime.date.fromisoformat(seance["date"])
-        jours_fr = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+        idx_selectionne = st.session_state.seance_selectionnee.get(joueur_programme)
+        if idx_selectionne is not None and idx_selectionne in df_programme.index:
+            idx = idx_selectionne
+            seance = df_programme.loc[idx]
+            date_seance = datetime.date.fromisoformat(seance["date"])
+            jours_fr = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
 
-        with st.container(border=True):
-            col_titre, col_date = st.columns([3, 2])
-            with col_titre:
-                st.markdown(f"#### Semaine {seance['semaine']} — Séance {seance['jour']}")
-            with col_date:
-                st.markdown(f"<div style='text-align:right; color:gray;'>{jours_fr[date_seance.weekday()]} {date_seance.strftime('%d/%m/%Y')}</div>", unsafe_allow_html=True)
+            with st.container(border=True):
+                col_titre, col_date = st.columns([3, 2])
+                with col_titre:
+                    st.markdown(f"#### Semaine {seance['semaine']} — Séance {seance['jour']}")
+                with col_date:
+                    st.markdown(f"<div style='text-align:right; color:gray;'>{jours_fr[date_seance.weekday()]} {date_seance.strftime('%d/%m/%Y')}</div>", unsafe_allow_html=True)
 
-            st.divider()
-            st.markdown(seance["exercices"])
-            st.divider()
+                st.divider()
 
-            nouvelle_note = st.text_area("Note (douleur, ressenti, résultat)", value=seance["note"], key=f"note_{idx}")
-            if st.button("Sauvegarder la note", key=f"save_note_{idx}"):
-                st.session_state.programme_entrainement.loc[idx, "note"] = nouvelle_note
-                st.success("Note sauvegardée.")
+                for position, exercice in enumerate(seance["exercices"], start=1):
+                    st.markdown(f"**{position}. {exercice.get('nom', 'Exercice')}**")
+                    if exercice.get("series_reps"):
+                        st.caption(exercice["series_reps"])
+                    st.write(exercice.get("description", ""))
+                    requete_video = urllib.parse.quote(f"{exercice.get('nom', '')} basketball drill tutorial")
+                    st.markdown(f"[Voir des vidéos de démonstration](https://www.youtube.com/results?search_query={requete_video})")
+                    st.markdown("")
+
+                st.divider()
+
+                nouvelle_note = st.text_area("Note (douleur, ressenti, résultat)", value=seance["note"], key=f"note_{joueur_programme}_{idx}")
+
+                col_save, col_analyse = st.columns(2)
+                with col_save:
+                    if st.button("Sauvegarder la note", key=f"save_note_{joueur_programme}_{idx}"):
+                        st.session_state.programmes[joueur_programme].loc[idx, "note"] = nouvelle_note
+                        sauvegarder_programme(joueur_programme, st.session_state.programmes[joueur_programme].to_dict('records'))
+                        st.success("Note sauvegardée.")
+                with col_analyse:
+                    if st.button("Faire analyser par l'IA", key=f"analyse_note_{joueur_programme}_{idx}"):
+                        texte_exercices_seance = "\n".join(
+                            f"- {e.get('nom', '')} ({e.get('series_reps', '')}) : {e.get('description', '')}"
+                            for e in seance["exercices"]
+                        )
+                        prompt_analyse = f"""
+                        Tu es un coach de basketball expérimenté qui suit un joueur sur la durée.
+
+                        Séance prévue (semaine {seance['semaine']}, séance {seance['jour']}) :
+                        {texte_exercices_seance}
+
+                        Retour du joueur après la séance (douleur, ressenti, résultat) : {nouvelle_note if nouvelle_note else "aucun retour renseigné"}
+
+                        Donne une analyse courte (3-4 phrases) : le ressenti est-il cohérent avec la séance prévue, y a-t-il un signal d'alerte (douleur, fatigue anormale) à surveiller, et un conseil concret pour la prochaine séance.
+                        """
+                        with st.spinner("Analyse en cours..."):
+                            analyse_note = demander_a_ia(prompt_analyse)
+                        st.info(analyse_note)
