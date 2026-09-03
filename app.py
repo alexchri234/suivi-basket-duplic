@@ -95,6 +95,57 @@ def sauvegarder_programme(nom_joueur, seances):
     donnees["programmes"][st.session_state.utilisateur_connecte][nom_joueur] = seances
     sauvegarder_donnees(donnees)
 
+def charger_cache_videos():
+    donnees = charger_donnees()
+    return donnees.get("cache_videos", {})
+
+def sauvegarder_cache_videos(cache_videos):
+    donnees = charger_donnees()
+    donnees["cache_videos"] = cache_videos
+    sauvegarder_donnees(donnees)
+
+def rechercher_video_youtube(nom_exercice, cle_api):
+    try:
+        reponse = requests.get(
+            "https://www.googleapis.com/youtube/v3/search",
+            params={
+                "part": "snippet",
+                "q": f"{nom_exercice} basketball drill",
+                "type": "video",
+                "maxResults": 1,
+                "key": cle_api
+            },
+            timeout=5
+        )
+        resultats = reponse.json().get("items", [])
+        if resultats:
+            return f"https://www.youtube.com/watch?v={resultats[0]['id']['videoId']}"
+    except (requests.RequestException, KeyError, IndexError, ValueError):
+        pass
+    return None
+
+def enrichir_avec_videos(seances):
+    cle_youtube = st.secrets.get("YOUTUBE_API_KEY")
+    if not cle_youtube:
+        return
+    cache_videos = charger_cache_videos()
+    cache_modifie = False
+    for seance in seances:
+        for exercice in seance.get("exercices", []):
+            cle_cache = exercice.get("nom", "").strip().lower()
+            if not cle_cache:
+                continue
+            if cle_cache in cache_videos:
+                exercice["video_url"] = cache_videos[cle_cache]
+                continue
+            url_trouvee = rechercher_video_youtube(exercice["nom"], cle_youtube)
+            if url_trouvee:
+                cache_videos[cle_cache] = url_trouvee
+                exercice["video_url"] = url_trouvee
+                cache_modifie = True
+    if cache_modifie:
+        sauvegarder_cache_videos(cache_videos)
+
 if "equipe" not in st.session_state:
     st.session_state.equipe = charger_equipe()
 
@@ -417,6 +468,9 @@ if len(st.session_state.equipe) > 0:
                     if isinstance(seance.get("exercices"), str):
                         seance["exercices"] = [{"nom": "Séance", "series_reps": "", "description": seance["exercices"]}]
 
+                with st.spinner("Recherche des vidéos de démonstration..."):
+                    enrichir_avec_videos(seances)
+
                 st.session_state.programmes[joueur_programme] = pd.DataFrame(seances)
                 sauvegarder_programme(joueur_programme, seances)
                 st.session_state.seance_selectionnee.pop(joueur_programme, None)
@@ -468,8 +522,11 @@ if len(st.session_state.equipe) > 0:
                     if exercice.get("series_reps"):
                         st.caption(exercice["series_reps"])
                     st.write(exercice.get("description", ""))
-                    requete_video = urllib.parse.quote(f'"{exercice.get("nom", "")}" basketball drill')
-                    st.markdown(f"[Voir des vidéos de démonstration](https://www.youtube.com/results?search_query={requete_video})")
+                    if exercice.get("video_url"):
+                        st.markdown(f"[Voir la vidéo de démonstration]({exercice['video_url']})")
+                    else:
+                        requete_video = urllib.parse.quote(f'"{exercice.get("nom", "")}" basketball drill')
+                        st.markdown(f"[Rechercher une vidéo de démonstration](https://www.youtube.com/results?search_query={requete_video})")
                     st.markdown("")
 
                 st.divider()
