@@ -401,6 +401,26 @@ if len(st.session_state.equipe) > 0:
     main_dominante = st.radio("Main dominante", ["Droite", "Gauche"])
     points_faibles = st.text_area("Points faibles spécifiques observés (optionnel)", placeholder="Ex: perd souvent le ballon en contre-attaque, main gauche faible...")
 
+    with st.expander("Plus de détails pour un programme sur mesure (optionnel)"):
+        st.markdown("**Matériel & contexte d'entraînement**")
+        materiel_disponible = st.multiselect(
+            "Matériel disponible",
+            ["Plots", "Échelle d'agilité", "Élastiques de résistance", "Medicine ball", "Salle de musculation", "Panier seulement (rien d'autre)"]
+        )
+        partenaire_disponible = st.radio("Partenaire d'entraînement ou coach disponible pour les exercices en opposition ?", ["Oui", "Non, s'entraîne seul"])
+        lieu_entrainement = st.selectbox("Lieu d'entraînement habituel", ["Terrain complet", "Demi-terrain", "Panier seul (allée, garage...)", "Salle de sport / gymnase"])
+
+        st.markdown("**Profil physique & sportif**")
+        taille_cm = st.number_input("Taille (cm)", min_value=0, max_value=230, value=0, help="Laisse à 0 si tu ne veux pas renseigner.")
+        blessures_generales = st.text_area("Historique de blessures ou limitations physiques (concerne tout le programme, pas seulement le volet Force)", placeholder="Ex: entorse de cheville récurrente, tendinite au genou...")
+        frequence_matchs = st.selectbox("Fréquence de matchs actuellement", ["Aucun match en ce moment", "1 match toutes les 2 semaines", "1 match par semaine", "2 matchs ou plus par semaine"])
+        echeance = st.text_input("Échéance ou objectif précis (optionnel)", placeholder="Ex: sélection régionale dans 6 semaines, tournoi le 12 octobre...")
+
+        st.markdown("**Style de jeu & polyvalence**")
+        postes_secondaires = st.multiselect("Poste(s) secondaire(s) / polyvalence (optionnel)", ["Meneur", "Arrière", "Ailier", "Ailier fort", "Pivot"])
+        style_jeu = st.selectbox("Style de jeu recherché", ["Non renseigné", "Scoreur", "Facilitateur / passeur", "Défenseur", "Polyvalent / two-way"])
+        jambe_appui_defense = st.radio("Jambe d'appui dominante en défense (optionnel)", ["Non renseigné", "Droite", "Gauche"])
+
     niveaux_definitions = {
         "Débutant": "Débutant : moins de 2 ans de pratique organisée. Ne maîtrise pas encore les fondamentaux de façon fiable — perd parfois le ballon sur un dribble simple, la forme de tir n'est pas stable, ne connaît pas encore les schémas défensifs de base.",
         "Intermédiaire": "Intermédiaire : 2 à 4 ans de pratique en club/compétition. Exécute les fondamentaux avec une bonne consistance (dribble des deux mains, forme de tir correcte, passes précises) mais manque encore de fiabilité sous pression ou en match serré.",
@@ -415,11 +435,16 @@ if len(st.session_state.equipe) > 0:
         ["Tir", "Dribble", "Finition au panier", "Défense", "Force & Pliométrie"]
     )
 
-    blessures = ""
+    types_tir_cibles = []
+    if "Tir" in objectifs:
+        types_tir_cibles = st.multiselect(
+            "Type de tir à cibler en particulier (optionnel)",
+            ["Tir statique (spot-up)", "Tir en mouvement (off the dribble)", "Tir sous contestation défensive", "Tir en transition", "Lancers francs"]
+        )
+
     experience_muscu = "Non renseigné"
     if "Force & Pliométrie" in objectifs:
         st.warning("⚠️ Le volet physique nécessite quelques précisions pour rester sûr.")
-        blessures = st.text_input("Blessures récentes ou douleurs actuelles (laisse vide si aucune)")
         experience_muscu = st.selectbox("Expérience en musculation/pliométrie", ["Débutant total", "Quelques mois", "Plus d'un an"])
 
     duree = st.slider("Durée du programme (semaines)", min_value=1, max_value=8, value=4)
@@ -451,7 +476,7 @@ if len(st.session_state.equipe) > 0:
             consigne_physique = ""
             if "Force & Pliométrie" in objectifs:
                 consigne_physique = f"""
-                Pour le volet physique (force, pliométrie, isométrie) : le joueur a pour expérience "{experience_muscu}" et signale comme blessure/douleur : "{blessures if blessures else 'aucune'}".
+                Pour le volet physique (force, pliométrie, isométrie) : le joueur a pour expérience "{experience_muscu}" et signale comme blessure/douleur : "{blessures_generales if blessures_generales else 'aucune'}".
                 Applique les principes recommandés par la NSCA pour les jeunes athlètes : développement multilatéral, technique avant charge, exercices au poids du corps ou à charge légère pour un débutant, mouvements pliométriques multi-directionnels (verticaux, horizontaux, latéraux) réalisés à effort maximal, et au moins 24 à 48h de récupération entre deux séances à dominante physique.
                 RÈGLE STRICTE : chaque séance qui inclut du travail physique doit comporter AU MINIMUM 4 exercices distincts de ce volet (idéalement 4 à 6), jamais seulement 1 ou 2 — sinon ce n'est pas un vrai volume d'entraînement. Si le nombre de séances disponibles dans la semaine le permet, privilégie plutôt de DÉDIER certaines séances entièrement au physique (4 à 6 exercices ce jour-là, rien d'autre) et de garder les autres séances entièrement pour les compétences basket, plutôt que de disperser un ou deux exercices physiques dans chaque séance. Répartis ce choix intelligemment selon le nombre de jours disponibles chaque semaine.
                 RÈGLE STRICTE (équilibre des groupes musculaires) : chaque séance à dominante physique doit couvrir les TROIS zones — bas du corps, haut du corps ET gainage/core — ce n'est jamais uniquement des squats/sauts avec une planche en guise de seul exercice de core. Varie aussi les exercices d'une séance à l'autre au fil du programme, ne répète pas systématiquement la même sélection.
@@ -471,6 +496,30 @@ if len(st.session_state.equipe) > 0:
                 "Pivot": "post moves, contre, rebond, finition près du cercle, agilité pour les rotations défensives"
             }
             consigne_poste = conseils_poste.get(poste, "les exigences générales de son poste")
+
+            infos_complementaires = []
+            if materiel_disponible:
+                infos_complementaires.append(f"Matériel disponible : {', '.join(materiel_disponible)}. N'utilise pas de matériel non listé ici ; si rien n'est coché ou seulement 'Panier seulement', reste sur des exercices au poids du corps ou ne nécessitant qu'un ballon et un panier.")
+            if partenaire_disponible == "Non, s'entraîne seul":
+                infos_complementaires.append("Le joueur s'entraîne SEUL, sans partenaire ni coach disponible : adapte ou retire les drills nécessitant un défenseur/passeur actif (1v1 live, shell drill, exercices de passe à deux...), ou propose une variante solo réaliste (ex : chrono ou plot à la place d'un défenseur, mur pour les passes, rebond sur soi-même).")
+            if lieu_entrainement:
+                infos_complementaires.append(f"Lieu d'entraînement habituel : {lieu_entrainement}.")
+            if taille_cm > 0:
+                infos_complementaires.append(f"Taille : {taille_cm} cm.")
+            if frequence_matchs != "Aucun match en ce moment":
+                infos_complementaires.append(f"Fréquence de matchs actuelle : {frequence_matchs} — adapte l'intensité et le volume total pour ne pas surcharger le joueur en période de compétition.")
+            if echeance:
+                infos_complementaires.append(f"Échéance/objectif précis du coach : {echeance} — priorise en conséquence si c'est pertinent pour la durée du programme.")
+            if postes_secondaires:
+                infos_complementaires.append(f"Poste(s) secondaire(s) / polyvalence : {', '.join(postes_secondaires)}.")
+            if style_jeu != "Non renseigné":
+                infos_complementaires.append(f"Style de jeu recherché : {style_jeu}.")
+            if jambe_appui_defense != "Non renseigné":
+                infos_complementaires.append(f"Jambe d'appui dominante en défense : {jambe_appui_defense}.")
+            if types_tir_cibles:
+                infos_complementaires.append(f"Types de tir à cibler en particulier : {', '.join(types_tir_cibles)}.")
+
+            infos_complementaires_texte = "\n".join(f"- {ligne}" for ligne in infos_complementaires) if infos_complementaires else "- Aucune information complémentaire renseignée."
 
             banque_drills = """
             Banque de drills reconnus à utiliser ou à t'en inspirer (piocher largement dedans sur toute la durée du programme, ne jamais se limiter à un ou deux par catégorie) :
@@ -501,6 +550,9 @@ if len(st.session_state.equipe) > 0:
             - Objectifs à travailler : {objectifs_texte}
             - Chaque séance dure environ {duree_seance} minutes.
 
+            Informations complémentaires données par le coach :
+            {infos_complementaires_texte}
+
             Principe fondamental : fais progresser le joueur sur l'ENSEMBLE de son jeu. Renforce aussi ses points forts (pour qu'ils deviennent des armes encore plus fiables) et ses points moyens, pas seulement ses points faibles.
 
             {consigne_physique}
@@ -522,6 +574,7 @@ if len(st.session_state.equipe) > 0:
             5. Calibre le niveau de progression annoncé à la durée réelle du programme ({duree} semaines) : sur un programme court, privilégie les progrès techniques et la lecture de jeu (les gains athlétiques significatifs prennent du temps) ; sur un programme plus long, une progression physique plus marquée devient crédible et peut être visée plus franchement. Dans tous les cas, n'annonce jamais de transformation spectaculaire d'une semaine à l'autre.
             6. Varie les exercices d'une séance à l'autre pour éviter la monotonie.
             7. Couvre l'ENSEMBLE des sous-aspects de chaque objectif sélectionné sur la durée du programme, pas seulement une partie. Exemple pour "Tir" : varie les distances (près du cercle, mi-distance, ET tir à 3 points si le niveau du joueur le permet) et les situations (catch and shoot, sortie de dribble, sous contestation défensive) — un joueur de niveau avancé qui travaille son tir doit voir du tir à 3 points dans son programme. Le même principe s'applique aux autres objectifs (Dribble, Finition, Défense) : ne te limite pas à un seul type de situation ou de distance répété d'une séance à l'autre.
+            8. Ne sois PAS trop rigide dans les associations poste/profil ↔ exercice : un joueur peut et doit progresser sur des compétences en dehors du profil traditionnel de son poste (ex : un Pivot peut tout à fait travailler le tir à 3 points si "Tir" est un objectif sélectionné, un Meneur peut travailler des post moves, etc.) — ne filtre jamais les objectifs choisis par le coach selon des stéréotypes de poste. En revanche, reste réaliste sur la PERTINENCE SITUATIONNELLE des combinaisons que tu inventes : par exemple, un tir à 3 points enchaîné après un pick-and-roll mené par un pivot n'est pas une situation de jeu crédible pour son rôle réel — ce n'est qu'un exemple parmi d'autres combinaisons peu réalistes à éviter. Distingue donc le TRAVAIL D'UNE COMPÉTENCE (toujours légitime, quel que soit le poste ou le profil) de la SITUATION DE JEU dans laquelle tu la mets en scène (qui doit rester crédible par rapport au rôle réel du joueur sur le terrain).
 
             Pour chaque séance, décompose les exercices en une LISTE d'objets structurés (pas un seul bloc de texte), chacun avec :
             - "nom" : le nom précis du drill
