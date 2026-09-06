@@ -146,6 +146,53 @@ def enrichir_avec_videos(seances):
     if cache_modifie:
         sauvegarder_cache_videos(cache_videos)
 
+def generer_schema_exercice(schema):
+    try:
+        couleurs = {"joueur": "#1d4ed8", "defenseur": "#c0392b", "plot": "#e67e22", "ballon": "#f39c12"}
+        elements_svg = []
+        for element in schema.get("elements", []):
+            x = max(0, min(100, float(element.get("x", 50))))
+            y = max(0, min(94, float(element.get("y", 50))))
+            type_element = element.get("type", "joueur")
+            couleur = couleurs.get(type_element, "#333333")
+            if type_element == "plot":
+                elements_svg.append(f'<rect x="{x - 1.5}" y="{y - 1.5}" width="3" height="3" fill="{couleur}"/>')
+            elif type_element == "ballon":
+                elements_svg.append(f'<circle cx="{x}" cy="{y}" r="1.5" fill="{couleur}"/>')
+            else:
+                label = element.get("label", "J" if type_element == "joueur" else "D")
+                elements_svg.append(f'<circle cx="{x}" cy="{y}" r="3" fill="{couleur}"/>')
+                elements_svg.append(f'<text x="{x}" y="{y + 1}" font-size="3" fill="white" text-anchor="middle">{label}</text>')
+
+        fleches_svg = []
+        for deplacement in schema.get("deplacements", []):
+            de = deplacement.get("de", [50, 50])
+            vers = deplacement.get("vers", [50, 40])
+            style = deplacement.get("style", "course")
+            pointilles = 'stroke-dasharray="2,1.5"' if style == "dribble" else ('stroke-dasharray="0.5,1.5"' if style == "passe" else "")
+            fleches_svg.append(
+                f'<line x1="{de[0]}" y1="{de[1]}" x2="{vers[0]}" y2="{vers[1]}" stroke="#333333" stroke-width="0.6" {pointilles} marker-end="url(#fleche)"/>'
+            )
+
+        return f"""<svg viewBox="0 0 100 94" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:320px; height:auto; background:#e8dcc8; border:1px solid #999; border-radius:4px;">
+            <defs>
+                <marker id="fleche" markerWidth="4" markerHeight="4" refX="3" refY="2" orient="auto">
+                    <path d="M0,0 L4,2 L0,4 z" fill="#333333"/>
+                </marker>
+            </defs>
+            <rect x="0" y="0" width="100" height="94" fill="none" stroke="#333333" stroke-width="0.5"/>
+            <line x1="0" y1="0.3" x2="100" y2="0.3" stroke="#333333" stroke-width="0.5" stroke-dasharray="2,2"/>
+            <rect x="34" y="56" width="32" height="38" fill="none" stroke="#333333" stroke-width="0.5"/>
+            <circle cx="50" cy="56" r="12" fill="none" stroke="#333333" stroke-width="0.5"/>
+            <path d="M 3 94 A 47 47 0 0 1 97 94" fill="none" stroke="#333333" stroke-width="0.5"/>
+            <line x1="44" y1="90" x2="56" y2="90" stroke="#333333" stroke-width="1"/>
+            <circle cx="50" cy="85" r="1.5" fill="none" stroke="#c0392b" stroke-width="0.8"/>
+            {''.join(fleches_svg)}
+            {''.join(elements_svg)}
+        </svg>"""
+    except (TypeError, ValueError, KeyError, AttributeError):
+        return None
+
 if "equipe" not in st.session_state:
     st.session_state.equipe = charger_equipe()
 
@@ -474,9 +521,13 @@ if len(st.session_state.equipe) > 0:
             - "nom" : le nom précis du drill
             - "series_reps" : le nombre de séries/répétitions ou la durée (ex : "4x10 répétitions", "3x30 secondes", "3 possessions")
             - "description" : 1 à 2 phrases claires expliquant COMMENT exécuter l'exercice, écrites pour qu'un débutant puisse comprendre et réaliser le mouvement sans supervision.
+            - "schema" (optionnel, uniquement si utile pour visualiser un positionnement ou un déplacement sur le terrain — omets-le pour un exercice de musculation/gainage/tir répétitif au même endroit) : un petit schéma de demi-terrain avec :
+              - "elements" : liste de {{"type": "joueur"|"defenseur"|"plot", "x": nombre 0-100, "y": nombre 0-94, "label": "1 ou 2 caractères"}}
+              - "deplacements" (optionnel) : liste de {{"de": [x, y], "vers": [x, y], "style": "dribble"|"passe"|"course"}}
+              - Repère : x=0 (gauche) à x=100 (droite) ; y=0 (ligne médiane, en haut) à y=94 (ligne de fond sous le panier, en bas) ; le panier est environ en (50, 85). Reste cohérent avec un vrai demi-terrain (ex : un exercice de finition part de la zone raquette près du panier, un exercice de tir extérieur place le joueur au-delà de y=56).
 
             Réponds UNIQUEMENT avec un JSON valide, sans aucun texte avant ou après, sous la forme exacte suivante (une entrée par séance, "jour" étant la position 1-indexée de la séance dans la liste de jours de sa semaine ci-dessus) :
-            [{{"semaine": 1, "jour": 1, "exercices": [{{"nom": "...", "series_reps": "...", "description": "..."}}, {{"nom": "...", "series_reps": "...", "description": "..."}}]}}]
+            [{{"semaine": 1, "jour": 1, "exercices": [{{"nom": "Mikan Drill", "series_reps": "3x10 répétitions", "description": "...", "schema": {{"elements": [{{"type": "joueur", "x": 50, "y": 80, "label": "J"}}, {{"type": "plot", "x": 44, "y": 88}}, {{"type": "plot", "x": 56, "y": 88}}], "deplacements": [{{"de": [44, 88], "vers": [56, 88], "style": "course"}}]}}}}, {{"nom": "...", "series_reps": "...", "description": "..."}}]}}]
             """
 
             with st.spinner("Génération du programme..."):
@@ -559,11 +610,17 @@ if len(st.session_state.equipe) > 0:
                     if exercice.get("series_reps"):
                         st.caption(exercice["series_reps"])
                     st.write(exercice.get("description", ""))
+
+                    if exercice.get("schema"):
+                        svg_schema = generer_schema_exercice(exercice["schema"])
+                        if svg_schema:
+                            st.markdown(svg_schema, unsafe_allow_html=True)
+
                     if exercice.get("video_url"):
-                        st.markdown(f"[Voir la vidéo de démonstration]({exercice['video_url']})")
+                        st.markdown(f"[Vidéo complémentaire]({exercice['video_url']})")
                     else:
                         requete_video = urllib.parse.quote(f'"{exercice.get("nom", "")}" basketball drill')
-                        st.markdown(f"[Rechercher une vidéo de démonstration](https://www.youtube.com/results?search_query={requete_video})")
+                        st.markdown(f"[Rechercher une vidéo complémentaire](https://www.youtube.com/results?search_query={requete_video})")
                     st.markdown("")
 
                 st.divider()
