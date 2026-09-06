@@ -473,15 +473,21 @@ if len(st.session_state.equipe) > 0:
             consigne_poste = conseils_poste.get(poste, "les exigences générales de son poste")
 
             banque_drills = """
-            Exemples de drills reconnus à utiliser ou à t'en inspirer (piocher largement dedans, ne pas se limiter à un ou deux) :
-            - Tir : Form Shooting près du panier (à intégrer en DÉBUT de programme, quel que soit le niveau), BEEF Shooting Drill, Catch and Shoot 5 spots, Off the Dribble Pull-up, Free Throw Routine, Around the World, Shooting off screens, Catch and Shoot 3-Point Series, Off-Dribble 3-Point Pull-up, Spot-Up 3-Point Shooting, Elevator Screen 3PT.
-            - Dribble : Two-Ball Dribbling, Cone Weave Dribbling, Tennis Ball Dribbling (main faible), Full Speed Crossover Series, Figure 8 Dribble, In-and-Out Series.
-            - Finition : Mikan Drill, Reverse Mikan, Euro Step Finishing, Floater Drill, Contact Finishing (avec un partenaire ou un pad).
-            - Défense : Defensive Slide Drill, Closeout Drill, Shell Drill, Mirror Drill, Zig-Zag Defense.
-            - Situations de match : 1v1 Live, 2v2 Live, 3v3 Half Court, Shell Drill 4v4, Small-Sided Game (score limité), Transition 3v2.
+            Banque de drills reconnus à utiliser ou à t'en inspirer (piocher largement dedans sur toute la durée du programme, ne jamais se limiter à un ou deux par catégorie) :
+            - Tir : Form Shooting près du panier (à intégrer en DÉBUT de programme, quel que soit le niveau), BEEF Shooting Drill, Catch and Shoot 5 spots, Off the Dribble Pull-up, Free Throw Routine, Around the World, Shooting off screens, Catch and Shoot 3-Point Series, Off-Dribble 3-Point Pull-up, Spot-Up 3-Point Shooting, Elevator Screen 3PT, Changing Spots Shooting Drill, Elbow Shooting Drill, Ray Allen Shooting Drill, Shooting Off the Pass in Motion, Quick-Release Shooting Drill, Rapid Fire Partner Shooting Drill, Close-out Contested Shooting Drill.
+            - Dribble : Two-Ball Dribbling, Cone Weave Dribbling, Tennis Ball Dribbling (main faible), Full Speed Crossover Series, Figure 8 Dribble, In-and-Out Series, Spider Dribble, Zig-Zag Dribble Drill, Round the Body Drill, Round the Head Drill, Round the Legs Drill, Double Behind the Back Crossover, Spin Dribble Series.
+            - Finition : Mikan Drill, Reverse Mikan, Euro Step Finishing, Floater Drill, Contact Finishing (avec un partenaire ou un pad), 2-Step Layup Drill, Extension Layup Drill, Zig-Zag Layups, Around the Arc 1v1 Finishing, One Step Lay In, Inside-Foot Layup Cone Drill, Power Layup/Bank Shot Drill.
+            - Défense : Defensive Slide Drill, Closeout Drill, Shell Drill, Mirror Drill, Zig-Zag Defense, 1v1 Wing Defense Drill, Defend the Dribble Drill, Kick the Can Drill, Closeout Assignments Drill, 1v1 Zig-Zag Full Court to Post Defense, 4v4 Shell Rotation Drill, 4v3 Continuous Defense.
+            - Passes : Wall Pass, Fast Break Pass Drill (3 lignes plein terrain), 3-2 Advance Passing Drill, Monkey in the Middle, Bull in the Ring, Triangle Passing Drill, 2-on-2 Entry Passing Drill, Pass the Rock, Diamond Passing Drill.
+            - Rebond : Close Out Box Out Drill, Mikan Box-Out Drill, Box Out and Score, Circle Box Out, Box Out 1v1 Drill.
+            - Post moves (utile Pivot/Ailier fort) : Up and Under, Drop Step, Jump Hook, Baby Hook, Spin Move, Turnaround Jumper, Chamberlain Low Post Move Series, Rapid Fire Post Moves Drill, Crab Dribble Series.
+            - Agilité / Footwork : One Foot In (échelle), Two Feet In (échelle), Two-Foot In-and-Out (échelle), Ickey Shuffle, Lateral Shuffle (échelle), Linear Speed Ladder Drill, Crossover Ladder Drill, Carioca Ladder Drill, Figure 8 Cone Sprint.
+            - Situations de match : 1v1 Live, 2v2 Live, 3v3 Half Court, Shell Drill 4v4, Small-Sided Game (score limité), Transition 3v2, Soft/Hard Closeouts avec défense, Progression 1v1 à 3v3 Closeouts.
             - Force & Pliométrie (bas du corps) : Squat au poids du corps, Box Jump, Broad Jump, Lateral Bound, Depth Jump (avancé), Single-leg RDL, Split Squat Jump, Bulgarian Split Squat.
             - Force & Pliométrie (haut du corps) : Pompes (Push-ups), Pompes plyométriques (Plyo Push-ups), Medicine Ball Chest Pass, Medicine Ball Overhead Slam, Rowing élastique (Band Row), Tirage vertical élastique (Band Pull-down), Dips sur banc, Pike Push-ups.
             - Force & Pliométrie (gainage/core) : Plank, Side Plank, Superman, Dead Bug, Medicine Ball Rotational Throw, Russian Twist, Hollow Hold.
+
+            Les catégories Passes, Rebond, Post moves et Agilité/Footwork ne sont pas des objectifs sélectionnables mais des compétences complémentaires : pioche dedans librement pour enrichir n'importe quelle séance, quels que soient les objectifs choisis par le coach.
             """
 
             prompt_programme = f"""
