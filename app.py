@@ -537,11 +537,12 @@ if len(st.session_state.equipe) > 0:
             - Force & Pliométrie (bas du corps) : Squat au poids du corps, Box Jump, Broad Jump, Lateral Bound, Depth Jump (avancé), Single-leg RDL, Split Squat Jump, Bulgarian Split Squat.
             - Force & Pliométrie (haut du corps) : Pompes (Push-ups), Pompes plyométriques (Plyo Push-ups), Medicine Ball Chest Pass, Medicine Ball Overhead Slam, Rowing élastique (Band Row), Tirage vertical élastique (Band Pull-down), Dips sur banc, Pike Push-ups.
             - Force & Pliométrie (gainage/core) : Plank, Side Plank, Superman, Dead Bug, Medicine Ball Rotational Throw, Russian Twist, Hollow Hold.
+            - Échauffement (OBLIGATOIRE en premier exercice de CHAQUE séance) : Walking High Knees, Knee Hugs, Glute Walk, Jumping Jacks, Airplane/Superman Drill, Frankenstein Drill, Leg Swings (avant-arrière et latéral), Carioca, Ball Slaps, Dribble d'échauffement (Two-Ball ou Figure 8 léger).
 
-            Les catégories Passes, Rebond, Post moves et Agilité/Footwork ne sont pas des objectifs sélectionnables mais des compétences complémentaires : pioche dedans librement pour enrichir n'importe quelle séance, quels que soient les objectifs choisis par le coach.
+            Les catégories Passes, Rebond, Post moves, Agilité/Footwork et Échauffement ne sont pas des objectifs sélectionnables mais des compétences complémentaires ou une étape obligatoire : pioche dedans librement pour enrichir n'importe quelle séance, quels que soient les objectifs choisis par le coach.
             """
 
-            def construire_prompt_semaine(num_semaine, jours_semaine):
+            def construire_prompt_semaine(num_semaine, jours_semaine, historique_texte):
                 jours_semaine_texte = ", ".join(jours_semaine)
                 return f"""
                 Tu es un préparateur physique et technique de haut niveau, spécialisé dans le développement de jeunes basketteurs. Tu t'appuies sur les méthodes des programmes de développement reconnus (type IMG Academy, EYBL) et sur les recommandations de la NSCA pour la préparation physique.
@@ -564,6 +565,11 @@ if len(st.session_state.equipe) > 0:
                 IMPORTANT — CETTE GÉNÉRATION NE CONCERNE QUE LA SEMAINE {num_semaine} SUR UN TOTAL DE {duree} SEMAINES (les autres semaines du programme sont générées séparément, dans d'autres appels — ne parle pas des autres semaines, concentre-toi uniquement sur celle-ci) :
                 Jours d'entraînement pour cette semaine : {jours_semaine_texte}. Génère une séance pour CHACUN de ces jours, dans cet ordre.
 
+                Historique des séances déjà générées lors des semaines précédentes de CE MÊME programme (pour éviter les répétitions et assurer une vraie progression) :
+                {historique_texte}
+
+                RÈGLE STRICTE DE VARIATION : même quand un jour de la semaine revient (ex : Lundi chaque semaine), son contenu doit être DIFFÉRENT de celui du même jour lors des semaines précédentes listées ci-dessus — change au moins une bonne partie des exercices, augmente légèrement la difficulté/complexité, ou change l'angle de travail (ex : un autre type de tir, une autre variante de dribble, une autre situation de match). Ne recopie JAMAIS le contenu d'une séance précédente à l'identique, même partiellement.
+
                 IMPORTANT sur la durée : chaque séance doit RÉELLEMENT remplir les {duree_seance} minutes prévues (à 10-15 minutes près), échauffement inclus — ce n'est pas un plafond à ne pas dépasser, c'est un volume à atteindre. Avant de finaliser une séance, additionne mentalement le temps de chaque exercice (exécution + repos entre séries) et vérifie que le total correspond aux {duree_seance} minutes. Si {duree_seance} est élevé (par exemple 90 minutes ou plus), cela veut dire qu'il faut PLUS d'exercices et/ou plus de séries, jamais des exercices artificiellement allongés. Une séance de {duree_seance} minutes qui ne contient que 3-4 exercices courts est un échec de calibration.
 
                 {banque_drills}
@@ -577,6 +583,8 @@ if len(st.session_state.equipe) > 0:
                 6. Varie les exercices d'une séance à l'autre pour éviter la monotonie.
                 7. Couvre l'ENSEMBLE des sous-aspects de chaque objectif sélectionné sur la durée du programme, pas seulement une partie. Exemple pour "Tir" : varie les distances (près du cercle, mi-distance, ET tir à 3 points si le niveau du joueur le permet) et les situations (catch and shoot, sortie de dribble, sous contestation défensive) — un joueur de niveau avancé qui travaille son tir doit voir du tir à 3 points dans son programme. Le même principe s'applique aux autres objectifs (Dribble, Finition, Défense) : ne te limite pas à un seul type de situation ou de distance répété d'une séance à l'autre.
                 8. Ne sois PAS trop rigide dans les associations poste/profil ↔ exercice : un joueur peut et doit progresser sur des compétences en dehors du profil traditionnel de son poste (ex : un Pivot peut tout à fait travailler le tir à 3 points si "Tir" est un objectif sélectionné, un Meneur peut travailler des post moves, etc.) — ne filtre jamais les objectifs choisis par le coach selon des stéréotypes de poste. En revanche, reste réaliste sur la PERTINENCE SITUATIONNELLE des combinaisons que tu inventes : par exemple, un tir à 3 points enchaîné après un pick-and-roll mené par un pivot n'est pas une situation de jeu crédible pour son rôle réel — ce n'est qu'un exemple parmi d'autres combinaisons peu réalistes à éviter. Distingue donc le TRAVAIL D'UNE COMPÉTENCE (toujours légitime, quel que soit le poste ou le profil) de la SITUATION DE JEU dans laquelle tu la mets en scène (qui doit rester crédible par rapport au rôle réel du joueur sur le terrain).
+                9. ÉCHAUFFEMENT OBLIGATOIRE : le tout premier exercice de CHAQUE séance, sans exception, doit être un échauffement dynamique (5 à 10 minutes selon la durée totale de la séance), tiré de la catégorie "Échauffement" de la banque de drills ci-dessous. Ne commence JAMAIS une séance directement par un exercice technique ou physique intense (ex : ne pas démarrer directement par du tir à 3 points ou un exercice de pliométrie à froid).
+                10. PROGRESSION INTERNE À LA SÉANCE : après l'échauffement, ordonne les exercices du plus simple/proche/fondamental vers le plus complexe/loin/exigeant. Par exemple pour une séance de tir, commence par du tir proche du panier (Form Shooting, Mikan) avant d'enchaîner vers le mi-distance puis le tir à 3 points ou sous contestation — ne mets jamais un exercice avancé (tir à 3 points, drill sous forte opposition) en tout début de séance juste après l'échauffement.
 
                 Pour chaque séance, décompose les exercices en une LISTE d'objets structurés (pas un seul bloc de texte), chacun avec :
                 - "nom" : le nom précis du drill
@@ -601,12 +609,15 @@ if len(st.session_state.equipe) > 0:
 
             semaines_a_generer = [(s, j) for s, j in jours_par_semaine.items() if j]
             seances = []
+            historique_exercices = []
             erreur_generation = None
             barre_progression = st.progress(0, text="Génération du programme...")
 
             for i, (num_semaine, jours_semaine) in enumerate(semaines_a_generer):
+                historique_texte = "\n".join(historique_exercices) if historique_exercices else "Aucune séance précédente (c'est la première semaine générée pour ce programme)."
+
                 with st.spinner(f"Génération de la semaine {num_semaine}/{duree}..."):
-                    reponse_semaine = demander_a_ia(construire_prompt_semaine(num_semaine, jours_semaine))
+                    reponse_semaine = demander_a_ia(construire_prompt_semaine(num_semaine, jours_semaine, historique_texte))
 
                 if reponse_semaine.startswith("ERREUR_IA:"):
                     erreur_generation = f"Échec à la semaine {num_semaine} : {reponse_semaine}"
@@ -618,6 +629,12 @@ if len(st.session_state.equipe) > 0:
                 except (json.JSONDecodeError, TypeError):
                     erreur_generation = f"L'IA n'a pas renvoyé un JSON valide pour la semaine {num_semaine}, réessaie.\n\nRéponse brute : {reponse_semaine[:500]}"
                     break
+
+                for seance_semaine in seances_semaine:
+                    position_jour = seance_semaine.get("jour", 1)
+                    nom_jour_reel = jours_semaine[position_jour - 1] if 0 < position_jour <= len(jours_semaine) else "?"
+                    noms_exercices = ", ".join(exo.get("nom", "?") for exo in seance_semaine.get("exercices", []) if isinstance(exo, dict))
+                    historique_exercices.append(f"- Semaine {num_semaine}, {nom_jour_reel} : {noms_exercices}")
 
                 barre_progression.progress((i + 1) / len(semaines_a_generer), text=f"Semaine {num_semaine}/{duree} générée.")
 
