@@ -189,6 +189,40 @@ if len(st.session_state.equipe) > 0:
         st.session_state.equipe = df_modifiable.to_dict('records')
         sauvegarder_equipe(st.session_state.equipe)
 
+    if "afficher_form_match" not in st.session_state:
+        st.session_state.afficher_form_match = False
+
+    if st.button("Ajouter un match"):
+        st.session_state.afficher_form_match = True
+
+    if st.session_state.afficher_form_match:
+        with st.form("ajout_match"):
+            joueur_match = st.selectbox("Joueur", df_modifiable['nom'], key="select_joueur_match")
+            points_match = st.number_input("Points marqués", min_value=0.0)
+            assists_match = st.number_input("Passes décisives", min_value=0.0)
+            rebonds_match = st.number_input("Rebonds", min_value=0.0)
+            steals_match = st.number_input("Interceptions", min_value=0.0)
+            turnovers_match = st.number_input("Pertes de balle", min_value=0.0)
+            valider_match = st.form_submit_button("Enregistrer le match")
+
+            if valider_match:
+                for joueur in st.session_state.equipe:
+                    if joueur["nom"] == joueur_match:
+                        nb_matchs = joueur.get("nb_matchs", 1)
+                        ancienne_moyenne = joueur["moyenne"]
+                        joueur["moyenne"] = round((ancienne_moyenne * nb_matchs + points_match) / (nb_matchs + 1), 2)
+                        joueur["assists"] = round((joueur["assists"] * nb_matchs + assists_match) / (nb_matchs + 1), 2)
+                        joueur["rebonds"] = round((joueur["rebonds"] * nb_matchs + rebonds_match) / (nb_matchs + 1), 2)
+                        joueur["steals"] = round((joueur["steals"] * nb_matchs + steals_match) / (nb_matchs + 1), 2)
+                        joueur["turnovers"] = round((joueur["turnovers"] * nb_matchs + turnovers_match) / (nb_matchs + 1), 2)
+                        joueur["progression"] = round(joueur["moyenne"] - ancienne_moyenne, 2)
+                        joueur["nb_matchs"] = nb_matchs + 1
+                        break
+                sauvegarder_equipe(st.session_state.equipe)
+                st.session_state.afficher_form_match = False
+                st.success(f"Match ajouté pour {joueur_match}, statistiques mises à jour !")
+                st.rerun()
+
     st.subheader("Moyenne de points par joueur")
     st.bar_chart(df_modifiable.set_index('nom')['moyenne'])
 
@@ -211,7 +245,7 @@ else:
     st.info("Ajoute au moins un joueur pour voir les statistiques.")
 
 # --- Analyse vidéo ---
-st.subheader("Analyse vidéo — Angles du bras")
+st.subheader("Analyse vidéo — Angles du bras et de la hanche")
 
 video_uploadee = st.file_uploader("Upload une vidéo (tir, dribble...)", type=["mp4", "mov"])
 
@@ -269,16 +303,19 @@ if video_uploadee is not None:
                         coude = points[14]
                         poignet = points[16]
                         index = points[20]
+                        genou = points[26]
 
                         angle_epaule = calculer_angle(hanche, epaule, coude)
                         angle_coude = calculer_angle(epaule, coude, poignet)
                         angle_poignet = calculer_angle(coude, poignet, index)
+                        angle_hanche = calculer_angle(epaule, hanche, genou)
 
                         mesures.append({
                             "image": idx,
                             "angle_epaule": round(angle_epaule, 1),
                             "angle_coude": round(angle_coude, 1),
-                            "angle_poignet": round(angle_poignet, 1)
+                            "angle_poignet": round(angle_poignet, 1),
+                            "angle_hanche": round(angle_hanche, 1)
                         })
                 idx += 1
 
@@ -289,14 +326,14 @@ if video_uploadee is not None:
 
                 texte_mesures = ""
                 for m in mesures:
-                    texte_mesures += f"Image {m['image']} : épaule {m['angle_epaule']}°, coude {m['angle_coude']}°, poignet {m['angle_poignet']}°\n"
+                    texte_mesures += f"Image {m['image']} : épaule {m['angle_epaule']}°, coude {m['angle_coude']}°, poignet {m['angle_poignet']}°, hanche {m['angle_hanche']}°\n"
 
                 prompt_video = f"""
-                Je suis coach de basketball N2. Voici des mesures d'angles du bras (épaule, coude, poignet) prises à différents moments d'une vidéo de tir :
+                Je suis coach de basketball N2. Voici des mesures d'angles du bras et de la hanche (épaule, coude, poignet, hanche) prises à différents moments d'une vidéo de tir :
 
                 {texte_mesures}
 
-                Analyse ces angles et donne, en tant que coach de basketball expérimenté, 3-4 phrases sur ce que ça révèle sur la technique de shoot du joueur (fluidité du geste, cohérence entre les angles, points à corriger).
+                Analyse ces angles et donne, en tant que coach de basketball expérimenté, 3-4 phrases sur ce que ça révèle sur la technique de shoot du joueur : fluidité du geste du bras, cohérence entre les angles, et en particulier ce que l'angle de hanche indique sur l'extension des jambes/du bassin dans le tir (transfert d'énergie des jambes vers le tir). Termine par des points concrets à corriger.
                 """
                 with st.spinner("Génération de l'analyse..."):
                     analyse_video = demander_a_ia(prompt_video)
