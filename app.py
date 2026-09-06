@@ -17,9 +17,16 @@ def demander_a_ia(prompt):
         "model": "deepseek-ai/DeepSeek-V3-0324",
         "messages": [{"role": "user", "content": prompt}]
     }
-    response = requests.post(API_URL, headers=headers, json=payload)
-    resultat = response.json()
-    return resultat['choices'][0]['message']['content']
+    try:
+        response = requests.post(API_URL, headers=headers, json=payload, timeout=120)
+        resultat = response.json()
+        return resultat['choices'][0]['message']['content']
+    except requests.exceptions.JSONDecodeError:
+        return f"ERREUR_IA: L'API n'a pas renvoyé de réponse exploitable (code HTTP {response.status_code}). Réessaie dans un instant ; si ça persiste, essaie avec moins de semaines ou d'objectifs à la fois.\n\nDétail brut : {response.text[:300]}"
+    except requests.exceptions.Timeout:
+        return "ERREUR_IA: L'API a mis trop de temps à répondre (délai dépassé). Réessaie, ou réduis le volume demandé (moins de semaines/séances)."
+    except (requests.RequestException, KeyError, IndexError) as erreur:
+        return f"ERREUR_IA: {erreur}"
 
 
 
@@ -591,6 +598,10 @@ if len(st.session_state.equipe) > 0:
 
             with st.spinner("Génération du programme..."):
                 reponse_programme = demander_a_ia(prompt_programme)
+
+            if reponse_programme.startswith("ERREUR_IA:"):
+                st.error(reponse_programme)
+                st.stop()
 
             texte_json = reponse_programme.strip()
             if texte_json.startswith("```"):
