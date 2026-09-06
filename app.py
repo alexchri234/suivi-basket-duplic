@@ -490,11 +490,6 @@ if len(st.session_state.equipe) > 0:
                 Évite tout exercice à haut risque de blessure, et précise systématiquement que ce programme doit être validé par un préparateur physique ou un professionnel avant d'être suivi.
                 """
 
-            jours_texte = "\n".join(
-                f"- Semaine {s} : {', '.join(jours) if jours else 'aucune séance'} ({len(jours)} séance(s)), dans cet ordre"
-                for s, jours in jours_par_semaine.items()
-            )
-
             conseils_poste = {
                 "Meneur": "ball-handling sous pression, vision de jeu, prise de décision en transition, tir en sortie de dribble",
                 "Arrière": "tir en catch-and-shoot et en sortie de dribble, finition en contre-attaque, défense sur joueur extérieur",
@@ -546,96 +541,116 @@ if len(st.session_state.equipe) > 0:
             Les catégories Passes, Rebond, Post moves et Agilité/Footwork ne sont pas des objectifs sélectionnables mais des compétences complémentaires : pioche dedans librement pour enrichir n'importe quelle séance, quels que soient les objectifs choisis par le coach.
             """
 
-            prompt_programme = f"""
-            Tu es un préparateur physique et technique de haut niveau, spécialisé dans le développement de jeunes basketteurs. Tu t'appuies sur les méthodes des programmes de développement reconnus (type IMG Academy, EYBL) et sur les recommandations de la NSCA pour la préparation physique.
+            def construire_prompt_semaine(num_semaine, jours_semaine):
+                jours_semaine_texte = ", ".join(jours_semaine)
+                return f"""
+                Tu es un préparateur physique et technique de haut niveau, spécialisé dans le développement de jeunes basketteurs. Tu t'appuies sur les méthodes des programmes de développement reconnus (type IMG Academy, EYBL) et sur les recommandations de la NSCA pour la préparation physique.
 
-            Profil du joueur :
-            - {ligne['nom']}, {age} ans, poste {poste}, main dominante {main_dominante} (donnée informative uniquement — ne construis pas le programme autour de la main forte)
-            - Niveau : {niveau}
-            - Statistiques actuelles : moyenne {ligne['moyenne']} pts, progression {ligne['progression']}, {ligne['assists']} assists, {ligne['rebonds']} rebonds, {ligne['steals']} steals, {ligne['turnovers']} pertes de balle
-            - Observations du coach (à pondérer avec les stats ci-dessus, pas à traiter comme LA priorité) : {points_faibles if points_faibles else "aucune observation particulière"}
-            - Objectifs à travailler : {objectifs_texte}
-            - Chaque séance dure environ {duree_seance} minutes.
+                Profil du joueur :
+                - {ligne['nom']}, {age} ans, poste {poste}, main dominante {main_dominante} (donnée informative uniquement — ne construis pas le programme autour de la main forte)
+                - Niveau : {niveau}
+                - Statistiques actuelles : moyenne {ligne['moyenne']} pts, progression {ligne['progression']}, {ligne['assists']} assists, {ligne['rebonds']} rebonds, {ligne['steals']} steals, {ligne['turnovers']} pertes de balle
+                - Observations du coach (à pondérer avec les stats ci-dessus, pas à traiter comme LA priorité) : {points_faibles if points_faibles else "aucune observation particulière"}
+                - Objectifs à travailler : {objectifs_texte}
+                - Chaque séance dure environ {duree_seance} minutes.
 
-            Informations complémentaires données par le coach :
-            {infos_complementaires_texte}
+                Informations complémentaires données par le coach :
+                {infos_complementaires_texte}
 
-            Principe fondamental : fais progresser le joueur sur l'ENSEMBLE de son jeu. Renforce aussi ses points forts (pour qu'ils deviennent des armes encore plus fiables) et ses points moyens, pas seulement ses points faibles.
+                Principe fondamental : fais progresser le joueur sur l'ENSEMBLE de son jeu. Renforce aussi ses points forts (pour qu'ils deviennent des armes encore plus fiables) et ses points moyens, pas seulement ses points faibles.
 
-            {consigne_physique}
+                {consigne_physique}
 
-            Calendrier exact voulu par le coach (jours d'entraînement par semaine) :
-            {jours_texte}
+                IMPORTANT — CETTE GÉNÉRATION NE CONCERNE QUE LA SEMAINE {num_semaine} SUR UN TOTAL DE {duree} SEMAINES (les autres semaines du programme sont générées séparément, dans d'autres appels — ne parle pas des autres semaines, concentre-toi uniquement sur celle-ci) :
+                Jours d'entraînement pour cette semaine : {jours_semaine_texte}. Génère une séance pour CHACUN de ces jours, dans cet ordre.
 
-            Génère une séance pour chacun de ces jours, dans l'ordre indiqué pour chaque semaine, en respectant strictement le nombre de séances par semaine.
+                IMPORTANT sur la durée : chaque séance doit RÉELLEMENT remplir les {duree_seance} minutes prévues (à 10-15 minutes près), échauffement inclus — ce n'est pas un plafond à ne pas dépasser, c'est un volume à atteindre. Avant de finaliser une séance, additionne mentalement le temps de chaque exercice (exécution + repos entre séries) et vérifie que le total correspond aux {duree_seance} minutes. Si {duree_seance} est élevé (par exemple 90 minutes ou plus), cela veut dire qu'il faut PLUS d'exercices et/ou plus de séries, jamais des exercices artificiellement allongés. Une séance de {duree_seance} minutes qui ne contient que 3-4 exercices courts est un échec de calibration.
 
-            IMPORTANT sur la durée : chaque séance doit RÉELLEMENT remplir les {duree_seance} minutes prévues (à 10-15 minutes près), échauffement inclus — ce n'est pas un plafond à ne pas dépasser, c'est un volume à atteindre. Avant de finaliser une séance, additionne mentalement le temps de chaque exercice (exécution + repos entre séries) et vérifie que le total correspond aux {duree_seance} minutes. Si {duree_seance} est élevé (par exemple 90 minutes ou plus), cela veut dire qu'il faut PLUS d'exercices et/ou plus de séries, jamais des exercices artificiellement allongés. Une séance de {duree_seance} minutes qui ne contient que 3-4 exercices courts est un échec de calibration.
+                {banque_drills}
 
-            {banque_drills}
+                Méthodologie de construction des séances :
+                1. PRIORITÉ aux situations de match : la majorité de chaque séance doit reposer sur des exercices en situation réelle (1v1, 2v2, 3v3, jeux réduits, exercices avec défenseur actif, transitions, prises de décision sous pression) plutôt que sur des répétitions techniques isolées sans opposition.
+                2. Garde une base technique solide et PROFESSIONNELLE avec des drills PRÉCIS ET NOMMÉS (pas de généralités comme "travail du tir"). Utilise le nom internationalement reconnu de chaque drill (généralement en anglais, tel qu'utilisé dans le coaching, ex "Mikan Drill", "Shell Drill") même si le reste de la séance est décrit en français : ce sont des noms standards pour lesquels il existe de vraies vidéos de démonstration. Si "Tir" fait partie des objectifs, un exercice de Form Shooting (ou équivalent de calibrage technique) doit apparaître dès les premières séances du programme, quel que soit le niveau.
+                3. Adapte au poste du joueur : {consigne_poste}.
+                4. Adapte la difficulté et la complexité des drills au niveau du joueur décrit ci-dessus ({niveau_choisi}) : plus de drills fondamentaux et de répétitions guidées pour un profil débutant, plus de variantes avancées, de contraintes (temps, opposition, prise de décision) et de combinaisons de mouvements pour un profil avancé.
+                5. Calibre le niveau de progression annoncé à la durée réelle du programme ({duree} semaines, nous générons actuellement la semaine {num_semaine}) : sur un programme court, privilégie les progrès techniques et la lecture de jeu (les gains athlétiques significatifs prennent du temps) ; sur un programme plus long, une progression physique plus marquée devient crédible et peut être visée plus franchement. Dans tous les cas, n'annonce jamais de transformation spectaculaire d'une semaine à l'autre.
+                6. Varie les exercices d'une séance à l'autre pour éviter la monotonie.
+                7. Couvre l'ENSEMBLE des sous-aspects de chaque objectif sélectionné sur la durée du programme, pas seulement une partie. Exemple pour "Tir" : varie les distances (près du cercle, mi-distance, ET tir à 3 points si le niveau du joueur le permet) et les situations (catch and shoot, sortie de dribble, sous contestation défensive) — un joueur de niveau avancé qui travaille son tir doit voir du tir à 3 points dans son programme. Le même principe s'applique aux autres objectifs (Dribble, Finition, Défense) : ne te limite pas à un seul type de situation ou de distance répété d'une séance à l'autre.
+                8. Ne sois PAS trop rigide dans les associations poste/profil ↔ exercice : un joueur peut et doit progresser sur des compétences en dehors du profil traditionnel de son poste (ex : un Pivot peut tout à fait travailler le tir à 3 points si "Tir" est un objectif sélectionné, un Meneur peut travailler des post moves, etc.) — ne filtre jamais les objectifs choisis par le coach selon des stéréotypes de poste. En revanche, reste réaliste sur la PERTINENCE SITUATIONNELLE des combinaisons que tu inventes : par exemple, un tir à 3 points enchaîné après un pick-and-roll mené par un pivot n'est pas une situation de jeu crédible pour son rôle réel — ce n'est qu'un exemple parmi d'autres combinaisons peu réalistes à éviter. Distingue donc le TRAVAIL D'UNE COMPÉTENCE (toujours légitime, quel que soit le poste ou le profil) de la SITUATION DE JEU dans laquelle tu la mets en scène (qui doit rester crédible par rapport au rôle réel du joueur sur le terrain).
 
-            Méthodologie de construction des séances :
-            1. PRIORITÉ aux situations de match : la majorité de chaque séance doit reposer sur des exercices en situation réelle (1v1, 2v2, 3v3, jeux réduits, exercices avec défenseur actif, transitions, prises de décision sous pression) plutôt que sur des répétitions techniques isolées sans opposition.
-            2. Garde une base technique solide et PROFESSIONNELLE avec des drills PRÉCIS ET NOMMÉS (pas de généralités comme "travail du tir"). Utilise le nom internationalement reconnu de chaque drill (généralement en anglais, tel qu'utilisé dans le coaching, ex "Mikan Drill", "Shell Drill") même si le reste de la séance est décrit en français : ce sont des noms standards pour lesquels il existe de vraies vidéos de démonstration. Si "Tir" fait partie des objectifs, un exercice de Form Shooting (ou équivalent de calibrage technique) doit apparaître dès les premières séances du programme, quel que soit le niveau.
-            3. Adapte au poste du joueur : {consigne_poste}.
-            4. Adapte la difficulté et la complexité des drills au niveau du joueur décrit ci-dessus ({niveau_choisi}) : plus de drills fondamentaux et de répétitions guidées pour un profil débutant, plus de variantes avancées, de contraintes (temps, opposition, prise de décision) et de combinaisons de mouvements pour un profil avancé.
-            5. Calibre le niveau de progression annoncé à la durée réelle du programme ({duree} semaines) : sur un programme court, privilégie les progrès techniques et la lecture de jeu (les gains athlétiques significatifs prennent du temps) ; sur un programme plus long, une progression physique plus marquée devient crédible et peut être visée plus franchement. Dans tous les cas, n'annonce jamais de transformation spectaculaire d'une semaine à l'autre.
-            6. Varie les exercices d'une séance à l'autre pour éviter la monotonie.
-            7. Couvre l'ENSEMBLE des sous-aspects de chaque objectif sélectionné sur la durée du programme, pas seulement une partie. Exemple pour "Tir" : varie les distances (près du cercle, mi-distance, ET tir à 3 points si le niveau du joueur le permet) et les situations (catch and shoot, sortie de dribble, sous contestation défensive) — un joueur de niveau avancé qui travaille son tir doit voir du tir à 3 points dans son programme. Le même principe s'applique aux autres objectifs (Dribble, Finition, Défense) : ne te limite pas à un seul type de situation ou de distance répété d'une séance à l'autre.
-            8. Ne sois PAS trop rigide dans les associations poste/profil ↔ exercice : un joueur peut et doit progresser sur des compétences en dehors du profil traditionnel de son poste (ex : un Pivot peut tout à fait travailler le tir à 3 points si "Tir" est un objectif sélectionné, un Meneur peut travailler des post moves, etc.) — ne filtre jamais les objectifs choisis par le coach selon des stéréotypes de poste. En revanche, reste réaliste sur la PERTINENCE SITUATIONNELLE des combinaisons que tu inventes : par exemple, un tir à 3 points enchaîné après un pick-and-roll mené par un pivot n'est pas une situation de jeu crédible pour son rôle réel — ce n'est qu'un exemple parmi d'autres combinaisons peu réalistes à éviter. Distingue donc le TRAVAIL D'UNE COMPÉTENCE (toujours légitime, quel que soit le poste ou le profil) de la SITUATION DE JEU dans laquelle tu la mets en scène (qui doit rester crédible par rapport au rôle réel du joueur sur le terrain).
+                Pour chaque séance, décompose les exercices en une LISTE d'objets structurés (pas un seul bloc de texte), chacun avec :
+                - "nom" : le nom précis du drill
+                - "series_reps" : le nombre de séries/répétitions ou la durée (ex : "4x10 répétitions", "3x30 secondes", "3 possessions")
+                - "description" : 1 à 2 phrases claires expliquant COMMENT exécuter l'exercice, écrites pour qu'un débutant puisse comprendre et réaliser le mouvement sans supervision.
+                - "schema" (optionnel, uniquement si utile pour visualiser un positionnement ou un déplacement sur le terrain — omets-le pour un exercice de musculation/gainage/tir répétitif au même endroit) : un petit schéma de demi-terrain avec :
+                  - "elements" : liste de {{"type": "joueur"|"defenseur"|"plot", "x": nombre 0-100, "y": nombre 0-94, "label": "1 ou 2 caractères"}}
+                  - "deplacements" (optionnel) : liste de {{"de": [x, y], "vers": [x, y], "style": "dribble"|"passe"|"course"}}
+                  - Repère : x=0 (gauche) à x=100 (droite) ; y=0 (ligne médiane, en haut) à y=94 (ligne de fond sous le panier, en bas) ; le panier est environ en (50, 85). Reste cohérent avec un vrai demi-terrain (ex : un exercice de finition part de la zone raquette près du panier, un exercice de tir extérieur place le joueur au-delà de y=56).
 
-            Pour chaque séance, décompose les exercices en une LISTE d'objets structurés (pas un seul bloc de texte), chacun avec :
-            - "nom" : le nom précis du drill
-            - "series_reps" : le nombre de séries/répétitions ou la durée (ex : "4x10 répétitions", "3x30 secondes", "3 possessions")
-            - "description" : 1 à 2 phrases claires expliquant COMMENT exécuter l'exercice, écrites pour qu'un débutant puisse comprendre et réaliser le mouvement sans supervision.
-            - "schema" (optionnel, uniquement si utile pour visualiser un positionnement ou un déplacement sur le terrain — omets-le pour un exercice de musculation/gainage/tir répétitif au même endroit) : un petit schéma de demi-terrain avec :
-              - "elements" : liste de {{"type": "joueur"|"defenseur"|"plot", "x": nombre 0-100, "y": nombre 0-94, "label": "1 ou 2 caractères"}}
-              - "deplacements" (optionnel) : liste de {{"de": [x, y], "vers": [x, y], "style": "dribble"|"passe"|"course"}}
-              - Repère : x=0 (gauche) à x=100 (droite) ; y=0 (ligne médiane, en haut) à y=94 (ligne de fond sous le panier, en bas) ; le panier est environ en (50, 85). Reste cohérent avec un vrai demi-terrain (ex : un exercice de finition part de la zone raquette près du panier, un exercice de tir extérieur place le joueur au-delà de y=56).
+                Réponds UNIQUEMENT avec un JSON valide, sans aucun texte avant ou après, sous la forme exacte suivante (une entrée par séance de CETTE semaine, "semaine" doit valoir {num_semaine} pour toutes les entrées, "jour" étant la position 1-indexée de la séance dans la liste de jours ci-dessus) :
+                [{{"semaine": {num_semaine}, "jour": 1, "exercices": [{{"nom": "Mikan Drill", "series_reps": "3x10 répétitions", "description": "...", "schema": {{"elements": [{{"type": "joueur", "x": 50, "y": 80, "label": "J"}}, {{"type": "plot", "x": 44, "y": 88}}, {{"type": "plot", "x": 56, "y": 88}}], "deplacements": [{{"de": [44, 88], "vers": [56, 88], "style": "course"}}]}}}}, {{"nom": "...", "series_reps": "...", "description": "..."}}]}}]
+                """
 
-            Réponds UNIQUEMENT avec un JSON valide, sans aucun texte avant ou après, sous la forme exacte suivante (une entrée par séance, "jour" étant la position 1-indexée de la séance dans la liste de jours de sa semaine ci-dessus) :
-            [{{"semaine": 1, "jour": 1, "exercices": [{{"nom": "Mikan Drill", "series_reps": "3x10 répétitions", "description": "...", "schema": {{"elements": [{{"type": "joueur", "x": 50, "y": 80, "label": "J"}}, {{"type": "plot", "x": 44, "y": 88}}, {{"type": "plot", "x": 56, "y": 88}}], "deplacements": [{{"de": [44, 88], "vers": [56, 88], "style": "course"}}]}}}}, {{"nom": "...", "series_reps": "...", "description": "..."}}]}}]
-            """
+            def nettoyer_json(texte):
+                texte = texte.strip()
+                if texte.startswith("```"):
+                    texte = texte.strip("`")
+                    if texte.lower().startswith("json"):
+                        texte = texte[4:]
+                return texte
 
-            with st.spinner("Génération du programme..."):
-                reponse_programme = demander_a_ia(prompt_programme)
+            semaines_a_generer = [(s, j) for s, j in jours_par_semaine.items() if j]
+            seances = []
+            erreur_generation = None
+            barre_progression = st.progress(0, text="Génération du programme...")
 
-            if reponse_programme.startswith("ERREUR_IA:"):
-                st.error(reponse_programme)
-                st.stop()
+            for i, (num_semaine, jours_semaine) in enumerate(semaines_a_generer):
+                with st.spinner(f"Génération de la semaine {num_semaine}/{duree}..."):
+                    reponse_semaine = demander_a_ia(construire_prompt_semaine(num_semaine, jours_semaine))
 
-            texte_json = reponse_programme.strip()
-            if texte_json.startswith("```"):
-                texte_json = texte_json.strip("`")
-                if texte_json.lower().startswith("json"):
-                    texte_json = texte_json[4:]
+                if reponse_semaine.startswith("ERREUR_IA:"):
+                    erreur_generation = f"Échec à la semaine {num_semaine} : {reponse_semaine}"
+                    break
 
-            try:
-                seances = json.loads(texte_json)
-                indice_jour_semaine = {"Lundi": 0, "Mardi": 1, "Mercredi": 2, "Jeudi": 3, "Vendredi": 4, "Samedi": 5, "Dimanche": 6}
-                aujourdhui = datetime.date.today()
-                lundi_semaine_1 = aujourdhui - datetime.timedelta(days=aujourdhui.weekday())
+                try:
+                    seances_semaine = json.loads(nettoyer_json(reponse_semaine))
+                    seances.extend(seances_semaine)
+                except (json.JSONDecodeError, TypeError):
+                    erreur_generation = f"L'IA n'a pas renvoyé un JSON valide pour la semaine {num_semaine}, réessaie.\n\nRéponse brute : {reponse_semaine[:500]}"
+                    break
 
-                for seance in seances:
-                    semaine = seance.get("semaine", 1)
-                    jour = seance.get("jour", 1)
-                    jours_choisis = jours_par_semaine.get(semaine, [])
-                    nom_jour = jours_choisis[jour - 1] if 0 < jour <= len(jours_choisis) else (jours_choisis[0] if jours_choisis else "Lundi")
-                    lundi_semaine = lundi_semaine_1 + datetime.timedelta(weeks=semaine - 1)
-                    seance["date"] = (lundi_semaine + datetime.timedelta(days=indice_jour_semaine[nom_jour])).isoformat()
-                    seance["note"] = ""
-                    if isinstance(seance.get("exercices"), str):
-                        seance["exercices"] = [{"nom": "Séance", "series_reps": "", "description": seance["exercices"]}]
+                barre_progression.progress((i + 1) / len(semaines_a_generer), text=f"Semaine {num_semaine}/{duree} générée.")
 
-                with st.spinner("Recherche des vidéos de démonstration..."):
-                    enrichir_avec_videos(seances)
+            barre_progression.empty()
 
-                st.session_state.programmes[joueur_programme] = pd.DataFrame(seances)
-                sauvegarder_programme(joueur_programme, seances)
-                st.session_state.seance_selectionnee.pop(joueur_programme, None)
-                st.success("Programme généré et sauvegardé !")
-            except (json.JSONDecodeError, TypeError, KeyError):
-                st.error("L'IA n'a pas renvoyé un JSON valide, réessaie.")
-                st.text(reponse_programme)
+            if erreur_generation:
+                st.error(erreur_generation)
+            else:
+                try:
+                    indice_jour_semaine = {"Lundi": 0, "Mardi": 1, "Mercredi": 2, "Jeudi": 3, "Vendredi": 4, "Samedi": 5, "Dimanche": 6}
+                    aujourdhui = datetime.date.today()
+                    lundi_semaine_1 = aujourdhui - datetime.timedelta(days=aujourdhui.weekday())
+
+                    for seance in seances:
+                        semaine = seance.get("semaine", 1)
+                        jour = seance.get("jour", 1)
+                        jours_choisis = jours_par_semaine.get(semaine, [])
+                        nom_jour = jours_choisis[jour - 1] if 0 < jour <= len(jours_choisis) else (jours_choisis[0] if jours_choisis else "Lundi")
+                        lundi_semaine = lundi_semaine_1 + datetime.timedelta(weeks=semaine - 1)
+                        seance["date"] = (lundi_semaine + datetime.timedelta(days=indice_jour_semaine[nom_jour])).isoformat()
+                        seance["note"] = ""
+                        if isinstance(seance.get("exercices"), str):
+                            seance["exercices"] = [{"nom": "Séance", "series_reps": "", "description": seance["exercices"]}]
+
+                    with st.spinner("Recherche des vidéos de démonstration..."):
+                        enrichir_avec_videos(seances)
+
+                    st.session_state.programmes[joueur_programme] = pd.DataFrame(seances)
+                    sauvegarder_programme(joueur_programme, seances)
+                    st.session_state.seance_selectionnee.pop(joueur_programme, None)
+                    st.success("Programme généré et sauvegardé !")
+                except (TypeError, KeyError):
+                    st.error("Le programme généré a une structure inattendue, réessaie.")
 
     if joueur_programme in st.session_state.programmes:
         df_programme = st.session_state.programmes[joueur_programme]
