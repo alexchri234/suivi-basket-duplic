@@ -523,24 +523,91 @@ if len(st.session_state.equipe) > 0:
 
             infos_complementaires_texte = "\n".join(f"- {ligne}" for ligne in infos_complementaires) if infos_complementaires else "- Aucune information complémentaire renseignée."
 
-            banque_drills = """
-            Banque de drills reconnus à utiliser ou à t'en inspirer (piocher largement dedans sur toute la durée du programme, ne jamais se limiter à un ou deux par catégorie) :
-            - Tir : Form Shooting près du panier (à intégrer en DÉBUT de programme, quel que soit le niveau), BEEF Shooting Drill, Catch and Shoot 5 spots, Off the Dribble Pull-up, Free Throw Routine, Around the World, Shooting off screens, Catch and Shoot 3-Point Series, Off-Dribble 3-Point Pull-up, Spot-Up 3-Point Shooting, Elevator Screen 3PT, Changing Spots Shooting Drill, Elbow Shooting Drill, Ray Allen Shooting Drill, Shooting Off the Pass in Motion, Quick-Release Shooting Drill, Rapid Fire Partner Shooting Drill, Close-out Contested Shooting Drill.
-            - Dribble : Two-Ball Dribbling, Cone Weave Dribbling, Tennis Ball Dribbling (main faible), Full Speed Crossover Series, Figure 8 Dribble, In-and-Out Series, Spider Dribble, Zig-Zag Dribble Drill, Round the Body Drill, Round the Head Drill, Round the Legs Drill, Double Behind the Back Crossover, Spin Dribble Series.
-            - Finition : Mikan Drill, Reverse Mikan, Euro Step Finishing, Floater Drill, Contact Finishing (avec un partenaire ou un pad), 2-Step Layup Drill, Extension Layup Drill, Zig-Zag Layups, Around the Arc 1v1 Finishing, One Step Lay In, Inside-Foot Layup Cone Drill, Power Layup/Bank Shot Drill.
-            - Défense : Defensive Slide Drill, Closeout Drill, Shell Drill, Mirror Drill, Zig-Zag Defense, 1v1 Wing Defense Drill, Defend the Dribble Drill, Kick the Can Drill, Closeout Assignments Drill, 1v1 Zig-Zag Full Court to Post Defense, 4v4 Shell Rotation Drill, 4v3 Continuous Defense.
-            - Passes : Wall Pass, Fast Break Pass Drill (3 lignes plein terrain), 3-2 Advance Passing Drill, Monkey in the Middle, Bull in the Ring, Triangle Passing Drill, 2-on-2 Entry Passing Drill, Pass the Rock, Diamond Passing Drill.
-            - Rebond : Close Out Box Out Drill, Mikan Box-Out Drill, Box Out and Score, Circle Box Out, Box Out 1v1 Drill.
-            - Post moves (utile Pivot/Ailier fort) : Up and Under, Drop Step, Jump Hook, Baby Hook, Spin Move, Turnaround Jumper, Chamberlain Low Post Move Series, Rapid Fire Post Moves Drill, Crab Dribble Series.
-            - Agilité / Footwork : One Foot In (échelle), Two Feet In (échelle), Two-Foot In-and-Out (échelle), Ickey Shuffle, Lateral Shuffle (échelle), Linear Speed Ladder Drill, Crossover Ladder Drill, Carioca Ladder Drill, Figure 8 Cone Sprint.
-            - Situations de match : 1v1 Live, 2v2 Live, 3v3 Half Court, Shell Drill 4v4, Small-Sided Game (score limité), Transition 3v2, Soft/Hard Closeouts avec défense, Progression 1v1 à 3v3 Closeouts.
-            - Force & Pliométrie (bas du corps) : Squat au poids du corps, Box Jump, Broad Jump, Lateral Bound, Depth Jump (avancé), Single-leg RDL, Split Squat Jump, Bulgarian Split Squat.
-            - Force & Pliométrie (haut du corps) : Pompes (Push-ups), Pompes plyométriques (Plyo Push-ups), Medicine Ball Chest Pass, Medicine Ball Overhead Slam, Rowing élastique (Band Row), Tirage vertical élastique (Band Pull-down), Dips sur banc, Pike Push-ups.
-            - Force & Pliométrie (gainage/core) : Plank, Side Plank, Superman, Dead Bug, Medicine Ball Rotational Throw, Russian Twist, Hollow Hold.
-            - Échauffement (OBLIGATOIRE en premier exercice de CHAQUE séance) : Walking High Knees, Knee Hugs, Glute Walk, Jumping Jacks, Airplane/Superman Drill, Frankenstein Drill, Leg Swings (avant-arrière et latéral), Carioca, Ball Slaps, Dribble d'échauffement (Two-Ball ou Figure 8 léger).
+            banque_categories = {
+                "Échauffement (OBLIGATOIRE en premier exercice de CHAQUE séance)": [
+                    "Walking High Knees", "Knee Hugs", "Glute Walk", "Jumping Jacks", "Airplane/Superman Drill",
+                    "Frankenstein Drill", "Leg Swings (avant-arrière et latéral)", "Carioca",
+                    "Ball Slaps", "Dribble d'échauffement (Two-Ball ou Figure 8 léger)"
+                ],
+                "Tir": [
+                    "Form Shooting près du panier", "BEEF Shooting Drill", "Catch and Shoot 5 spots",
+                    "Off the Dribble Pull-up", "Free Throw Routine", "Around the World", "Shooting off screens",
+                    "Catch and Shoot 3-Point Series", "Off-Dribble 3-Point Pull-up", "Spot-Up 3-Point Shooting",
+                    "Elevator Screen 3PT", "Changing Spots Shooting Drill", "Elbow Shooting Drill",
+                    "Ray Allen Shooting Drill", "Shooting Off the Pass in Motion", "Quick-Release Shooting Drill",
+                    "Close-out Contested Shooting Drill"
+                ],
+                "Dribble": [
+                    "Two-Ball Dribbling", "Cone Weave Dribbling", "Tennis Ball Dribbling (main faible)",
+                    "Full Speed Crossover Series", "Figure 8 Dribble", "In-and-Out Series", "Spider Dribble",
+                    "Zig-Zag Dribble Drill", "Round the Body Drill", "Round the Head Drill", "Round the Legs Drill",
+                    "Double Behind the Back Crossover", "Spin Dribble Series"
+                ],
+                "Finition": [
+                    "Mikan Drill", "Reverse Mikan", "Euro Step Finishing", "Floater Drill",
+                    "Contact Finishing (avec un partenaire ou un pad)", "2-Step Layup Drill", "Extension Layup Drill",
+                    "Zig-Zag Layups", "Around the Arc 1v1 Finishing", "One Step Lay In",
+                    "Inside-Foot Layup Cone Drill", "Power Layup/Bank Shot Drill"
+                ],
+                "Défense (réalisable seul ou avec 1 partenaire)": [
+                    "Defensive Slide Drill", "Closeout Drill", "Mirror Drill", "Zig-Zag Defense",
+                    "1v1 Wing Defense Drill", "Defend the Dribble Drill", "Kick the Can Drill",
+                    "Closeout Assignments Drill", "1v1 Zig-Zag Full Court to Post Defense"
+                ],
+                "Passes (solo ou avec 1 partenaire)": [
+                    "Wall Pass (solo)", "Partner Chest Pass Series", "Partner Bounce Pass Series",
+                    "Two-Man Give-and-Go Passing", "Pass the Rock (version 2 joueurs)", "One-Handed Push Pass Drill"
+                ],
+                "Rebond (solo ou avec 1 partenaire)": [
+                    "Mikan Box-Out Drill", "Box Out 1v1 Drill", "Rebond et finition immédiate (solo, contre planche)"
+                ],
+                "Post moves (utile Pivot/Ailier fort)": [
+                    "Up and Under", "Drop Step", "Jump Hook", "Baby Hook", "Spin Move", "Turnaround Jumper",
+                    "Chamberlain Low Post Move Series", "Rapid Fire Post Moves Drill", "Crab Dribble Series"
+                ],
+                "Agilité / Footwork": [
+                    "One Foot In (échelle)", "Two Feet In (échelle)", "Two-Foot In-and-Out (échelle)",
+                    "Ickey Shuffle", "Lateral Shuffle (échelle)", "Linear Speed Ladder Drill",
+                    "Crossover Ladder Drill", "Carioca Ladder Drill", "Figure 8 Cone Sprint"
+                ],
+                "Situations de match (1v1 par défaut ; au-delà, uniquement si le coach a confirmé plusieurs partenaires disponibles)": [
+                    "1v1 Live", "1v1 Closeout Live", "Progression 1v1 à 2v2 (si partenaires disponibles)",
+                    "Transition Solo Chronométrée"
+                ],
+                "Force & Pliométrie (bas du corps)": [
+                    "Squat au poids du corps", "Goblet Squat", "Box Jump", "Broad Jump", "Lateral Bound",
+                    "Depth Jump (avancé)", "Single-leg RDL", "Split Squat Jump", "Bulgarian Split Squat",
+                    "Walking Lunges", "Pistol Squat (avancé)", "Power Skips", "Stair Jumps"
+                ],
+                "Force & Pliométrie (haut du corps)": [
+                    "Pompes (Push-ups)", "Pompes plyométriques (Plyo Push-ups)", "Medicine Ball Chest Pass",
+                    "Medicine Ball Overhead Slam", "Rowing élastique (Band Row)", "Tirage vertical élastique (Band Pull-down)",
+                    "Dips sur banc", "Pike Push-ups", "Diamond Push-ups", "Renegade Row (avancé)"
+                ],
+                "Force & Pliométrie (gainage/core)": [
+                    "Plank", "Side Plank", "Superman", "Dead Bug", "Medicine Ball Rotational Throw",
+                    "Russian Twist", "Hollow Hold", "Bird Dog", "Hanging Leg Raise (avancé)"
+                ],
+            }
 
-            Les catégories Passes, Rebond, Post moves, Agilité/Footwork et Échauffement ne sont pas des objectifs sélectionnables mais des compétences complémentaires ou une étape obligatoire : pioche dedans librement pour enrichir n'importe quelle séance, quels que soient les objectifs choisis par le coach.
-            """
+            def selectionner_sous_liste_semaine(liste, num_semaine, taille=6):
+                if not liste:
+                    return []
+                taille = min(taille, len(liste))
+                n = len(liste)
+                debut = ((num_semaine - 1) * taille) % n
+                if debut + taille <= n:
+                    return liste[debut:debut + taille]
+                return liste[debut:] + liste[:(debut + taille) - n]
+
+            def construire_banque_semaine(num_semaine):
+                lignes = []
+                for categorie, liste in banque_categories.items():
+                    sous_liste = selectionner_sous_liste_semaine(liste, num_semaine, taille=6)
+                    if categorie.startswith("Tir") and "Form Shooting près du panier" not in sous_liste:
+                        sous_liste = ["Form Shooting près du panier"] + sous_liste
+                    lignes.append(f"- {categorie} : {', '.join(sous_liste)}")
+                return "\n".join(lignes)
 
             def construire_prompt_semaine(num_semaine, jours_semaine, historique_texte):
                 jours_semaine_texte = ", ".join(jours_semaine)
@@ -572,7 +639,8 @@ if len(st.session_state.equipe) > 0:
 
                 IMPORTANT sur la durée : chaque séance doit RÉELLEMENT remplir les {duree_seance} minutes prévues (à 10-15 minutes près), échauffement inclus — ce n'est pas un plafond à ne pas dépasser, c'est un volume à atteindre. Avant de finaliser une séance, additionne mentalement le temps de chaque exercice (exécution + repos entre séries) et vérifie que le total correspond aux {duree_seance} minutes. Si {duree_seance} est élevé (par exemple 90 minutes ou plus), cela veut dire qu'il faut PLUS d'exercices et/ou plus de séries, jamais des exercices artificiellement allongés. Une séance de {duree_seance} minutes qui ne contient que 3-4 exercices courts est un échec de calibration.
 
-                {banque_drills}
+                Banque de drills à utiliser en PRIORITÉ pour CETTE semaine précisément (sélection tournante qui change chaque semaine pour garantir la variété — c'est un mécanisme automatique, pas un choix de l'IA : respecte-le pour ne pas retomber sur les mêmes exercices qu'une semaine précédente). Tu peux ponctuellement sortir de cette liste si nécessaire, mais privilégie-la :
+                {construire_banque_semaine(num_semaine)}
 
                 Méthodologie de construction des séances :
                 1. PRIORITÉ aux situations de match : la majorité de chaque séance doit reposer sur des exercices en situation réelle (1v1, 2v2, 3v3, jeux réduits, exercices avec défenseur actif, transitions, prises de décision sous pression) plutôt que sur des répétitions techniques isolées sans opposition.
@@ -585,6 +653,7 @@ if len(st.session_state.equipe) > 0:
                 8. Ne sois PAS trop rigide dans les associations poste/profil ↔ exercice : un joueur peut et doit progresser sur des compétences en dehors du profil traditionnel de son poste (ex : un Pivot peut tout à fait travailler le tir à 3 points si "Tir" est un objectif sélectionné, un Meneur peut travailler des post moves, etc.) — ne filtre jamais les objectifs choisis par le coach selon des stéréotypes de poste. En revanche, reste réaliste sur la PERTINENCE SITUATIONNELLE des combinaisons que tu inventes : par exemple, un tir à 3 points enchaîné après un pick-and-roll mené par un pivot n'est pas une situation de jeu crédible pour son rôle réel — ce n'est qu'un exemple parmi d'autres combinaisons peu réalistes à éviter. Distingue donc le TRAVAIL D'UNE COMPÉTENCE (toujours légitime, quel que soit le poste ou le profil) de la SITUATION DE JEU dans laquelle tu la mets en scène (qui doit rester crédible par rapport au rôle réel du joueur sur le terrain).
                 9. ÉCHAUFFEMENT OBLIGATOIRE : le tout premier exercice de CHAQUE séance, sans exception, doit être un échauffement dynamique (5 à 10 minutes selon la durée totale de la séance), tiré de la catégorie "Échauffement" de la banque de drills ci-dessous. Ne commence JAMAIS une séance directement par un exercice technique ou physique intense (ex : ne pas démarrer directement par du tir à 3 points ou un exercice de pliométrie à froid).
                 10. PROGRESSION INTERNE À LA SÉANCE : après l'échauffement, ordonne les exercices du plus simple/proche/fondamental vers le plus complexe/loin/exigeant. Par exemple pour une séance de tir, commence par du tir proche du panier (Form Shooting, Mikan) avant d'enchaîner vers le mi-distance puis le tir à 3 points ou sous contestation — ne mets jamais un exercice avancé (tir à 3 points, drill sous forte opposition) en tout début de séance juste après l'échauffement.
+                11. RÉALISME LOGISTIQUE : ce programme est destiné à UN SEUL joueur. Tous les exercices doivent être réalisables par ce joueur SEUL ou avec AU MAXIMUM un partenaire d'entraînement, sauf si le coach a explicitement indiqué disposer d'un groupe/d'une équipe dans les informations complémentaires ci-dessus. N'utilise donc JAMAIS d'exercice nécessitant plusieurs partenaires supplémentaires ou une équipe complète (pas de 2v2/3v3/4v4, pas de "Shell Drill" classique à 8 joueurs, pas d'exercice de passes à 3 lignes ou plus) — remplace systématiquement par l'équivalent 1v1, en solo (contre un mur, un chrono ou une cible), ou avec un seul partenaire.
 
                 Pour chaque séance, décompose les exercices en une LISTE d'objets structurés (pas un seul bloc de texte), chacun avec :
                 - "nom" : le nom précis du drill
