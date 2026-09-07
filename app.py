@@ -485,8 +485,9 @@ if len(st.session_state.equipe) > 0:
                 consigne_physique = f"""
                 Pour le volet physique (force, pliométrie, isométrie) : le joueur a pour expérience "{experience_muscu}" et signale comme blessure/douleur : "{blessures_generales if blessures_generales else 'aucune'}".
                 Applique les principes recommandés par la NSCA pour les jeunes athlètes : développement multilatéral, technique avant charge, exercices au poids du corps ou à charge légère pour un débutant, mouvements pliométriques multi-directionnels (verticaux, horizontaux, latéraux) réalisés à effort maximal, et au moins 24 à 48h de récupération entre deux séances à dominante physique.
+                PHILOSOPHIE BASKET, PAS BODYBUILDING : un basketteur n'a pas besoin d'un entraînement d'isolation façon musculation esthétique (pas de séries de biceps curls ou de développé couché comme seul objectif). Le basket se joue majoritairement en appui UNILATÉRAL (une jambe à la fois lors des courses, sauts, changements de direction) : privilégie donc les mouvements unilatéraux (fentes, squats sur une jambe, sauts sur une jambe) par rapport aux mouvements bilatéraux classiques. Privilégie aussi la puissance rotationnelle (medicine ball), l'explosivité (pliométrie), le gainage anti-rotation, et l'équilibre/proprioception (catégorie dédiée dans la banque) — ce sont les qualités physiques qui transfèrent réellement sur le terrain, pas le volume musculaire pur.
                 RÈGLE STRICTE : chaque séance qui inclut du travail physique doit comporter AU MINIMUM 4 exercices distincts de ce volet (idéalement 4 à 6), jamais seulement 1 ou 2 — sinon ce n'est pas un vrai volume d'entraînement. Si le nombre de séances disponibles dans la semaine le permet, privilégie plutôt de DÉDIER certaines séances entièrement au physique (4 à 6 exercices ce jour-là, rien d'autre) et de garder les autres séances entièrement pour les compétences basket, plutôt que de disperser un ou deux exercices physiques dans chaque séance. Répartis ce choix intelligemment selon le nombre de jours disponibles chaque semaine.
-                RÈGLE STRICTE (équilibre des groupes musculaires) : chaque séance à dominante physique doit couvrir les TROIS zones — bas du corps, haut du corps ET gainage/core — ce n'est jamais uniquement des squats/sauts avec une planche en guise de seul exercice de core. Varie aussi les exercices d'une séance à l'autre au fil du programme, ne répète pas systématiquement la même sélection.
+                RÈGLE STRICTE (équilibre des groupes musculaires) : chaque séance à dominante physique doit couvrir les TROIS zones — bas du corps, haut du corps ET gainage/core — ce n'est jamais uniquement des squats/sauts avec une planche en guise de seul exercice de core. Intègre régulièrement un exercice d'équilibre/proprioception, pas seulement de la force pure. Varie aussi les exercices d'une séance à l'autre au fil du programme, ne répète pas systématiquement la même sélection.
                 Évite tout exercice à haut risque de blessure, et précise systématiquement que ce programme doit être validé par un préparateur physique ou un professionnel avant d'être suivi.
                 """
 
@@ -526,8 +527,8 @@ if len(st.session_state.equipe) > 0:
             banque_categories = {
                 "Échauffement (OBLIGATOIRE en premier exercice de CHAQUE séance)": [
                     "Walking High Knees", "Knee Hugs", "Glute Walk", "Jumping Jacks", "Airplane/Superman Drill",
-                    "Frankenstein Drill", "Leg Swings (avant-arrière et latéral)", "Carioca",
-                    "Ball Slaps", "Dribble d'échauffement (Two-Ball ou Figure 8 léger)"
+                    "Frankenstein Drill", "Leg Swings (avant-arrière et latéral)", "Carioca", "Ball Slaps",
+                    "Dribble d'échauffement (Two-Ball ou Figure 8 léger)", "World's Greatest Stretch", "Arm Circles"
                 ],
                 "Tir": [
                     "Form Shooting près du panier", "BEEF Shooting Drill", "Catch and Shoot 5 spots",
@@ -535,19 +536,36 @@ if len(st.session_state.equipe) > 0:
                     "Catch and Shoot 3-Point Series", "Off-Dribble 3-Point Pull-up", "Spot-Up 3-Point Shooting",
                     "Elevator Screen 3PT", "Changing Spots Shooting Drill", "Elbow Shooting Drill",
                     "Ray Allen Shooting Drill", "Shooting Off the Pass in Motion", "Quick-Release Shooting Drill",
-                    "Close-out Contested Shooting Drill"
+                    "Close-out Contested Shooting Drill", "One-Dribble Pull-up Series (aile, sommet, angle)",
+                    "Pound Dribble Step-Back Shooting Drill", "Shooting off the Gather (catch en course puis tir)",
+                    "Shot Fake puis Tir (One-Two Step)"
                 ],
-                "Dribble": [
+                "Dribble / Ball Handling": [
                     "Two-Ball Dribbling", "Cone Weave Dribbling", "Tennis Ball Dribbling (main faible)",
                     "Full Speed Crossover Series", "Figure 8 Dribble", "In-and-Out Series", "Spider Dribble",
                     "Zig-Zag Dribble Drill", "Round the Body Drill", "Round the Head Drill", "Round the Legs Drill",
-                    "Double Behind the Back Crossover", "Spin Dribble Series"
+                    "Double Behind the Back Crossover", "Spin Dribble Series", "Weighted Ball Combo Series",
+                    "Two-Ball Alternating Crossover"
                 ],
-                "Finition": [
+                "Combo Moves (enchaînement dribble → tir ou finition, style workout pro)": [
+                    "Hésitation → Crossover → Pull-up", "Pound Dribble → Step-Back 3 points",
+                    "Crossover → Euro Step Finish", "Hésitation → Éclat (burst) → Finition au cercle",
+                    "In-and-Out → Attaque directe du cercle", "Behind the Back → Pull-up mi-distance",
+                    "Crossover → Behind the Back → Entre les jambes → Finition (combo Brickley)",
+                    "Sonnette (Rocker Step) → Attaque ou Tir"
+                ],
+                "Écrans / Jeu sans ballon (adapté solo avec un plot ou une chaise en guise d'écran)": [
+                    "Curl Cut sur écran (Down Screen)", "Pin Down puis Catch and Shoot",
+                    "Fade sur écran (Flare Screen simulé)", "Dribble Screen (faux écran porteur) puis attaque du cercle",
+                    "Pop sur écran puis Catch and Shoot", "Back Cut sur refus d'écran"
+                ],
+                "Finition (dont prise de balle avancée)": [
                     "Mikan Drill", "Reverse Mikan", "Euro Step Finishing", "Floater Drill",
                     "Contact Finishing (avec un partenaire ou un pad)", "2-Step Layup Drill", "Extension Layup Drill",
                     "Zig-Zag Layups", "Around the Arc 1v1 Finishing", "One Step Lay In",
-                    "Inside-Foot Layup Cone Drill", "Power Layup/Bank Shot Drill"
+                    "Inside-Foot Layup Cone Drill", "Power Layup/Bank Shot Drill", "Hop Step Finish",
+                    "Reverse Layup", "Gather Step Finish (0 step) au ramassé de dribble", "Scoop Shot sous le cercle",
+                    "Floater après Euro Step (combo)"
                 ],
                 "Défense (réalisable seul ou avec 1 partenaire)": [
                     "Defensive Slide Drill", "Closeout Drill", "Mirror Drill", "Zig-Zag Defense",
@@ -563,30 +581,39 @@ if len(st.session_state.equipe) > 0:
                 ],
                 "Post moves (utile Pivot/Ailier fort)": [
                     "Up and Under", "Drop Step", "Jump Hook", "Baby Hook", "Spin Move", "Turnaround Jumper",
-                    "Chamberlain Low Post Move Series", "Rapid Fire Post Moves Drill", "Crab Dribble Series"
+                    "Chamberlain Low Post Move Series", "Rapid Fire Post Moves Drill", "Crab Dribble Series",
+                    "Jab Step → Face-up Attack", "Up Fake → Jump Hook"
                 ],
                 "Agilité / Footwork": [
                     "One Foot In (échelle)", "Two Feet In (échelle)", "Two-Foot In-and-Out (échelle)",
                     "Ickey Shuffle", "Lateral Shuffle (échelle)", "Linear Speed Ladder Drill",
                     "Crossover Ladder Drill", "Carioca Ladder Drill", "Figure 8 Cone Sprint"
                 ],
+                "Équilibre / Proprioception": [
+                    "Single-Leg Balance Hold (yeux ouverts puis fermés)", "Star Excursion Reach",
+                    "Single-Leg Balance avec réception de passe", "Bulgarian Split Squat contrôlé (équilibre + force)",
+                    "Atterrissage contrôlé de saut (Box Landing / Stick the Landing)", "Tandem Stance Hold",
+                    "Single-Leg RDL en équilibre"
+                ],
                 "Situations de match (1v1 par défaut ; au-delà, uniquement si le coach a confirmé plusieurs partenaires disponibles)": [
                     "1v1 Live", "1v1 Closeout Live", "Progression 1v1 à 2v2 (si partenaires disponibles)",
                     "Transition Solo Chronométrée"
                 ],
-                "Force & Pliométrie (bas du corps)": [
+                "Force & Pliométrie (bas du corps, priorité aux mouvements UNILATÉRAUX)": [
                     "Squat au poids du corps", "Goblet Squat", "Box Jump", "Broad Jump", "Lateral Bound",
                     "Depth Jump (avancé)", "Single-leg RDL", "Split Squat Jump", "Bulgarian Split Squat",
-                    "Walking Lunges", "Pistol Squat (avancé)", "Power Skips", "Stair Jumps"
+                    "Walking Lunges", "Pistol Squat (avancé)", "Power Skips", "Stair Jumps",
+                    "Single-Leg Box Squat", "Lateral Lunge avec réachat"
                 ],
-                "Force & Pliométrie (haut du corps)": [
+                "Force & Pliométrie (haut du corps, fonctionnel/explosif)": [
                     "Pompes (Push-ups)", "Pompes plyométriques (Plyo Push-ups)", "Medicine Ball Chest Pass",
                     "Medicine Ball Overhead Slam", "Rowing élastique (Band Row)", "Tirage vertical élastique (Band Pull-down)",
                     "Dips sur banc", "Pike Push-ups", "Diamond Push-ups", "Renegade Row (avancé)"
                 ],
-                "Force & Pliométrie (gainage/core)": [
+                "Force & Pliométrie (gainage/core, priorité anti-rotation et rotationnel)": [
                     "Plank", "Side Plank", "Superman", "Dead Bug", "Medicine Ball Rotational Throw",
-                    "Russian Twist", "Hollow Hold", "Bird Dog", "Hanging Leg Raise (avancé)"
+                    "Russian Twist", "Hollow Hold", "Bird Dog", "Hanging Leg Raise (avancé)",
+                    "Pallof Press (anti-rotation, élastique)", "Medicine Ball Woodchopper"
                 ],
             }
 
@@ -640,6 +667,7 @@ if len(st.session_state.equipe) > 0:
                 9. ÉCHAUFFEMENT OBLIGATOIRE : le tout premier exercice de CHAQUE séance, sans exception, doit être un échauffement dynamique (5 à 10 minutes selon la durée totale de la séance), tiré de la catégorie "Échauffement" de la banque de drills ci-dessous. Ne commence JAMAIS une séance directement par un exercice technique ou physique intense (ex : ne pas démarrer directement par du tir à 3 points ou un exercice de pliométrie à froid).
                 10. PROGRESSION INTERNE À LA SÉANCE : après l'échauffement, ordonne les exercices du plus simple/proche/fondamental vers le plus complexe/loin/exigeant. Par exemple pour une séance de tir, commence par du tir proche du panier (Form Shooting, Mikan) avant d'enchaîner vers le mi-distance puis le tir à 3 points ou sous contestation — ne mets jamais un exercice avancé (tir à 3 points, drill sous forte opposition) en tout début de séance juste après l'échauffement.
                 11. RÉALISME LOGISTIQUE : ce programme est destiné à UN SEUL joueur. Tous les exercices doivent être réalisables par ce joueur SEUL ou avec AU MAXIMUM un partenaire d'entraînement, sauf si le coach a explicitement indiqué disposer d'un groupe/d'une équipe dans les informations complémentaires ci-dessus. N'utilise donc JAMAIS d'exercice nécessitant plusieurs partenaires supplémentaires ou une équipe complète (pas de 2v2/3v3/4v4, pas de "Shell Drill" classique à 8 joueurs, pas d'exercice de passes à 3 lignes ou plus) — remplace systématiquement par l'équivalent 1v1, en solo (contre un mur, un chrono ou une cible), ou avec un seul partenaire.
+                12. NIVEAU DE JEU RÉEL, PAS SEULEMENT DES DRILLS ISOLÉS : pour un joueur de niveau Intermédiaire ou Avancé, intègre régulièrement des exercices de la catégorie "Combo Moves" (enchaînement dribble → tir/finition, comme dans un vrai workout pro type Chris Brickley ou Drew Hanlen) plutôt que de rester sur des répétitions techniques isolées. Utilise aussi la catégorie "Écrans / Jeu sans ballon" (un plot ou une chaise fait office d'écran) pour travailler le jeu sans ballon même en entraînement individuel — un joueur ne joue jamais uniquement en 1v1 avec ballon dans un vrai match. Intègre aussi ponctuellement un exercice de la catégorie "Équilibre / Proprioception", pas seulement pour l'objectif Force & Pliométrie mais aussi comme prévention de blessure générale.
 
                 Pour chaque séance, décompose les exercices en une LISTE d'objets structurés (pas un seul bloc de texte), chacun avec :
                 - "nom" : le nom précis du drill
