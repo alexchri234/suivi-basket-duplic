@@ -590,26 +590,11 @@ if len(st.session_state.equipe) > 0:
                 ],
             }
 
-            def selectionner_sous_liste_semaine(liste, num_semaine, taille=6):
-                if not liste:
-                    return []
-                taille = min(taille, len(liste))
-                n = len(liste)
-                debut = ((num_semaine - 1) * taille) % n
-                if debut + taille <= n:
-                    return liste[debut:debut + taille]
-                return liste[debut:] + liste[:(debut + taille) - n]
+            banque_complete_texte = "\n".join(
+                f"- {categorie} : {', '.join(liste)}" for categorie, liste in banque_categories.items()
+            )
 
-            def construire_banque_semaine(num_semaine):
-                lignes = []
-                for categorie, liste in banque_categories.items():
-                    sous_liste = selectionner_sous_liste_semaine(liste, num_semaine, taille=6)
-                    if categorie.startswith("Tir") and "Form Shooting près du panier" not in sous_liste:
-                        sous_liste = ["Form Shooting près du panier"] + sous_liste
-                    lignes.append(f"- {categorie} : {', '.join(sous_liste)}")
-                return "\n".join(lignes)
-
-            def construire_prompt_semaine(num_semaine, jours_semaine, historique_texte):
+            def construire_prompt_semaine(num_semaine, jours_semaine, historique_texte, exclusions_texte):
                 jours_semaine_texte = ", ".join(jours_semaine)
                 return f"""
                 Tu es un préparateur physique et technique de haut niveau, spécialisé dans le développement de jeunes basketteurs. Tu t'appuies sur les méthodes des programmes de développement reconnus (type IMG Academy, EYBL) et sur les recommandations de la NSCA pour la préparation physique.
@@ -632,15 +617,16 @@ if len(st.session_state.equipe) > 0:
                 IMPORTANT — CETTE GÉNÉRATION NE CONCERNE QUE LA SEMAINE {num_semaine} SUR UN TOTAL DE {duree} SEMAINES (les autres semaines du programme sont générées séparément, dans d'autres appels — ne parle pas des autres semaines, concentre-toi uniquement sur celle-ci) :
                 Jours d'entraînement pour cette semaine : {jours_semaine_texte}. Génère une séance pour CHACUN de ces jours, dans cet ordre.
 
-                Historique des séances déjà générées lors des semaines précédentes de CE MÊME programme (pour éviter les répétitions et assurer une vraie progression) :
+                Historique des séances déjà générées lors des semaines précédentes de CE MÊME programme (pour information et pour assurer une vraie progression) :
                 {historique_texte}
 
-                RÈGLE STRICTE DE VARIATION : même quand un jour de la semaine revient (ex : Lundi chaque semaine), son contenu doit être DIFFÉRENT de celui du même jour lors des semaines précédentes listées ci-dessus — change au moins une bonne partie des exercices, augmente légèrement la difficulté/complexité, ou change l'angle de travail (ex : un autre type de tir, une autre variante de dribble, une autre situation de match). Ne recopie JAMAIS le contenu d'une séance précédente à l'identique, même partiellement.
+                EXERCICES INTERDITS pour cette semaine — liste noire précise, à respecter STRICTEMENT (contrainte automatique, pas une suggestion) : pour chaque jour ci-dessous, n'utilise AUCUN des noms d'exercices déjà utilisés ce même jour de la semaine lors d'une semaine précédente. Choisis autre chose dans la banque complète (fournie plus bas), en gardant la pertinence pour le profil du joueur — tu as tout le reste de la banque à disposition, ce n'est pas une restriction de choix, juste une interdiction de recopier :
+                {exclusions_texte}
 
                 IMPORTANT sur la durée : chaque séance doit RÉELLEMENT remplir les {duree_seance} minutes prévues (à 10-15 minutes près), échauffement inclus — ce n'est pas un plafond à ne pas dépasser, c'est un volume à atteindre. Avant de finaliser une séance, additionne mentalement le temps de chaque exercice (exécution + repos entre séries) et vérifie que le total correspond aux {duree_seance} minutes. Si {duree_seance} est élevé (par exemple 90 minutes ou plus), cela veut dire qu'il faut PLUS d'exercices et/ou plus de séries, jamais des exercices artificiellement allongés. Une séance de {duree_seance} minutes qui ne contient que 3-4 exercices courts est un échec de calibration.
 
-                Banque de drills à utiliser en PRIORITÉ pour CETTE semaine précisément (sélection tournante qui change chaque semaine pour garantir la variété — c'est un mécanisme automatique, pas un choix de l'IA : respecte-le pour ne pas retomber sur les mêmes exercices qu'une semaine précédente). Tu peux ponctuellement sortir de cette liste si nécessaire, mais privilégie-la :
-                {construire_banque_semaine(num_semaine)}
+                Banque de drills complète, choisis librement dedans (en respectant la liste noire ci-dessus) selon ce qui est le plus pertinent pour CE joueur précis :
+                {banque_complete_texte}
 
                 Méthodologie de construction des séances :
                 1. PRIORITÉ aux situations de match : la majorité de chaque séance doit reposer sur des exercices en situation réelle (1v1, 2v2, 3v3, jeux réduits, exercices avec défenseur actif, transitions, prises de décision sous pression) plutôt que sur des répétitions techniques isolées sans opposition.
@@ -679,14 +665,22 @@ if len(st.session_state.equipe) > 0:
             semaines_a_generer = [(s, j) for s, j in jours_par_semaine.items() if j]
             seances = []
             historique_exercices = []
+            deja_utilises_par_jour = {}
             erreur_generation = None
             barre_progression = st.progress(0, text="Génération du programme...")
 
             for i, (num_semaine, jours_semaine) in enumerate(semaines_a_generer):
                 historique_texte = "\n".join(historique_exercices) if historique_exercices else "Aucune séance précédente (c'est la première semaine générée pour ce programme)."
 
+                lignes_exclusions = []
+                for jour_nom in jours_semaine:
+                    deja_utilises = deja_utilises_par_jour.get(jour_nom, [])
+                    if deja_utilises:
+                        lignes_exclusions.append(f"- {jour_nom} : {', '.join(deja_utilises)}")
+                exclusions_texte = "\n".join(lignes_exclusions) if lignes_exclusions else "Aucun exercice interdit (c'est la première fois que ces jours sont générés)."
+
                 with st.spinner(f"Génération de la semaine {num_semaine}/{duree}..."):
-                    reponse_semaine = demander_a_ia(construire_prompt_semaine(num_semaine, jours_semaine, historique_texte))
+                    reponse_semaine = demander_a_ia(construire_prompt_semaine(num_semaine, jours_semaine, historique_texte, exclusions_texte))
 
                 if reponse_semaine.startswith("ERREUR_IA:"):
                     erreur_generation = f"Échec à la semaine {num_semaine} : {reponse_semaine}"
@@ -702,8 +696,9 @@ if len(st.session_state.equipe) > 0:
                 for seance_semaine in seances_semaine:
                     position_jour = seance_semaine.get("jour", 1)
                     nom_jour_reel = jours_semaine[position_jour - 1] if 0 < position_jour <= len(jours_semaine) else "?"
-                    noms_exercices = ", ".join(exo.get("nom", "?") for exo in seance_semaine.get("exercices", []) if isinstance(exo, dict))
-                    historique_exercices.append(f"- Semaine {num_semaine}, {nom_jour_reel} : {noms_exercices}")
+                    noms_exercices_liste = [exo.get("nom", "?") for exo in seance_semaine.get("exercices", []) if isinstance(exo, dict)]
+                    historique_exercices.append(f"- Semaine {num_semaine}, {nom_jour_reel} : {', '.join(noms_exercices_liste)}")
+                    deja_utilises_par_jour.setdefault(nom_jour_reel, []).extend(noms_exercices_liste)
 
                 barre_progression.progress((i + 1) / len(semaines_a_generer), text=f"Semaine {num_semaine}/{duree} générée.")
 
