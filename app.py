@@ -457,6 +457,15 @@ if len(st.session_state.equipe) > 0:
     duree = st.slider("Durée du programme (semaines)", min_value=1, max_value=8, value=4)
     duree_seance = st.slider("Durée de chaque séance (minutes)", min_value=15, max_value=180, value=60, step=5)
 
+    duree_physique = 0
+    if "Force & Pliométrie" in objectifs:
+        duree_physique = st.slider(
+            "Temps à dédier au volet physique par séance (minutes)",
+            min_value=5, max_value=duree_seance, value=min(15, duree_seance), step=5,
+            help="Le reste de la séance sera consacré aux compétences basket."
+        )
+        st.caption(f"→ {duree_physique} min de physique, {duree_seance - duree_physique} min de basket, sur chaque séance.")
+
     st.markdown("**Jours d'entraînement**")
     st.caption("Choisis les jours semaine par semaine — ils n'ont pas besoin d'être les mêmes d'une semaine à l'autre.")
     jours_semaine_liste = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
@@ -485,9 +494,9 @@ if len(st.session_state.equipe) > 0:
                 consigne_physique = f"""
                 Pour le volet physique (force, pliométrie, isométrie) : le joueur a pour expérience "{experience_muscu}" et signale comme blessure/douleur : "{blessures_generales if blessures_generales else 'aucune'}".
                 Applique les principes recommandés par la NSCA pour les jeunes athlètes : développement multilatéral, technique avant charge, exercices au poids du corps ou à charge légère pour un débutant, mouvements pliométriques multi-directionnels (verticaux, horizontaux, latéraux) réalisés à effort maximal, et au moins 24 à 48h de récupération entre deux séances à dominante physique.
-                PHILOSOPHIE BASKET, PAS BODYBUILDING : un basketteur n'a pas besoin d'un entraînement d'isolation façon musculation esthétique (pas de séries de biceps curls ou de développé couché comme seul objectif). Le basket se joue majoritairement en appui UNILATÉRAL (une jambe à la fois lors des courses, sauts, changements de direction) : privilégie donc les mouvements unilatéraux (fentes, squats sur une jambe, sauts sur une jambe) par rapport aux mouvements bilatéraux classiques. Privilégie aussi la puissance rotationnelle (medicine ball), l'explosivité (pliométrie), le gainage anti-rotation, et l'équilibre/proprioception (catégorie dédiée dans la banque) — ce sont les qualités physiques qui transfèrent réellement sur le terrain, pas le volume musculaire pur.
-                RÈGLE STRICTE : chaque séance qui inclut du travail physique doit comporter AU MINIMUM 4 exercices distincts de ce volet (idéalement 4 à 6), jamais seulement 1 ou 2 — sinon ce n'est pas un vrai volume d'entraînement. Si le nombre de séances disponibles dans la semaine le permet, privilégie plutôt de DÉDIER certaines séances entièrement au physique (4 à 6 exercices ce jour-là, rien d'autre) et de garder les autres séances entièrement pour les compétences basket, plutôt que de disperser un ou deux exercices physiques dans chaque séance. Répartis ce choix intelligemment selon le nombre de jours disponibles chaque semaine.
-                RÈGLE STRICTE (équilibre des groupes musculaires) : chaque séance à dominante physique doit couvrir les TROIS zones — bas du corps, haut du corps ET gainage/core — ce n'est jamais uniquement des squats/sauts avec une planche en guise de seul exercice de core. Intègre régulièrement un exercice d'équilibre/proprioception, pas seulement de la force pure. Varie aussi les exercices d'une séance à l'autre au fil du programme, ne répète pas systématiquement la même sélection.
+                PHILOSOPHIE BASKET, PAS BODYBUILDING : un basketteur n'a pas besoin d'un entraînement d'isolation façon musculation esthétique (pas de séries de biceps curls ou de développé couché comme seul objectif). Le basket se joue majoritairement en appui UNILATÉRAL (une jambe à la fois lors des courses, sauts, changements de direction) : privilégie donc les mouvements unilatéraux (fentes, squats sur une jambe, sauts sur une jambe) par rapport aux mouvements bilatéraux classiques. Privilégie aussi la puissance rotationnelle (medicine ball), l'explosivité (pliométrie), le gainage anti-rotation, l'équilibre/proprioception, la mobilité/prévention des blessures et le conditionnement spécifique basket (catégories dédiées dans la banque) — ce sont les qualités physiques qui transfèrent réellement sur le terrain, pas le volume musculaire pur.
+                RÈGLE STRICTE DE DOSAGE (BUDGET TEMPS FIXÉ PAR LE COACH) : sur les {duree_seance} minutes totales de la séance, le coach a explicitement fixé {duree_physique} minutes pour le volet physique — PAS PLUS. Les {duree_seance - duree_physique} minutes restantes sont pour les compétences basket. N'ajoute PAS d'exercices physiques au-delà de ce budget, même si tu penses qu'il en faudrait plus : calibre le nombre d'exercices (2-3 si le budget est court, 4-6 s'il est plus généreux) pour remplir précisément {duree_physique} minutes, ni plus ni moins.
+                RÈGLE (équilibre des groupes musculaires, dans la limite du budget temps ci-dessus) : quand le budget le permet, couvre plusieurs zones parmi bas du corps, haut du corps, gainage/core, équilibre/proprioception et mobilité — ce n'est jamais uniquement des squats/sauts avec une planche en guise de seul exercice de core. Varie aussi les exercices d'une séance à l'autre au fil du programme, ne répète pas systématiquement la même sélection.
                 Évite tout exercice à haut risque de blessure, et précise systématiquement que ce programme doit être validé par un préparateur physique ou un professionnel avant d'être suivi.
                 """
 
@@ -603,17 +612,29 @@ if len(st.session_state.equipe) > 0:
                     "Squat au poids du corps", "Goblet Squat", "Box Jump", "Broad Jump", "Lateral Bound",
                     "Depth Jump (avancé)", "Single-leg RDL", "Split Squat Jump", "Bulgarian Split Squat",
                     "Walking Lunges", "Pistol Squat (avancé)", "Power Skips", "Stair Jumps",
-                    "Single-Leg Box Squat", "Lateral Lunge avec réachat"
+                    "Single-Leg Box Squat", "Lateral Lunge avec réachat", "Ankle Jumps (débutant)",
+                    "Rotational Hops (débutant/intermédiaire)", "Squat Jump léger (débutant)",
+                    "Zigzag Hops (avancé)", "Rotational Broad Jump (avancé)"
                 ],
                 "Force & Pliométrie (haut du corps, fonctionnel/explosif)": [
                     "Pompes (Push-ups)", "Pompes plyométriques (Plyo Push-ups)", "Medicine Ball Chest Pass",
                     "Medicine Ball Overhead Slam", "Rowing élastique (Band Row)", "Tirage vertical élastique (Band Pull-down)",
-                    "Dips sur banc", "Pike Push-ups", "Diamond Push-ups", "Renegade Row (avancé)"
+                    "Dips sur banc", "Pike Push-ups", "Diamond Push-ups", "Renegade Row (avancé)",
+                    "Medicine Ball Rotational Slam (avancé)"
                 ],
                 "Force & Pliométrie (gainage/core, priorité anti-rotation et rotationnel)": [
                     "Plank", "Side Plank", "Superman", "Dead Bug", "Medicine Ball Rotational Throw",
                     "Russian Twist", "Hollow Hold", "Bird Dog", "Hanging Leg Raise (avancé)",
                     "Pallof Press (anti-rotation, élastique)", "Medicine Ball Woodchopper"
+                ],
+                "Conditioning / Endurance spécifique basket": [
+                    "Suicides (sprints progressifs ligne par ligne)", "17s (sprints latéraux ligne à ligne)",
+                    "Defensive Slide Conditioning (couloir de plots)", "Shuttle Run", "Sprint Intervalles (course/récupération)"
+                ],
+                "Mobilité / Prévention des blessures": [
+                    "Ankle Circles", "Hip Circles (à quatre pattes et debout)", "Pigeon Stretch", "Cat-Camel",
+                    "Deep Split Squat (mobilité de hanche)", "Dynamic Hip Extension", "Calf Raises (renforcement cheville)",
+                    "Single Leg Jump to Double Leg Landing (prehab)", "Single Leg Hop to Single Leg Landing (prehab)"
                 ],
             }
 
@@ -667,7 +688,8 @@ if len(st.session_state.equipe) > 0:
                 9. ÉCHAUFFEMENT OBLIGATOIRE : le tout premier exercice de CHAQUE séance, sans exception, doit être un échauffement dynamique (5 à 10 minutes selon la durée totale de la séance), tiré de la catégorie "Échauffement" de la banque de drills ci-dessous. Ne commence JAMAIS une séance directement par un exercice technique ou physique intense (ex : ne pas démarrer directement par du tir à 3 points ou un exercice de pliométrie à froid).
                 10. PROGRESSION INTERNE À LA SÉANCE : après l'échauffement, ordonne les exercices du plus simple/proche/fondamental vers le plus complexe/loin/exigeant. Par exemple pour une séance de tir, commence par du tir proche du panier (Form Shooting, Mikan) avant d'enchaîner vers le mi-distance puis le tir à 3 points ou sous contestation — ne mets jamais un exercice avancé (tir à 3 points, drill sous forte opposition) en tout début de séance juste après l'échauffement.
                 11. RÉALISME LOGISTIQUE : ce programme est destiné à UN SEUL joueur. Tous les exercices doivent être réalisables par ce joueur SEUL ou avec AU MAXIMUM un partenaire d'entraînement, sauf si le coach a explicitement indiqué disposer d'un groupe/d'une équipe dans les informations complémentaires ci-dessus. N'utilise donc JAMAIS d'exercice nécessitant plusieurs partenaires supplémentaires ou une équipe complète (pas de 2v2/3v3/4v4, pas de "Shell Drill" classique à 8 joueurs, pas d'exercice de passes à 3 lignes ou plus) — remplace systématiquement par l'équivalent 1v1, en solo (contre un mur, un chrono ou une cible), ou avec un seul partenaire.
-                12. NIVEAU DE JEU RÉEL, PAS SEULEMENT DES DRILLS ISOLÉS : pour un joueur de niveau Intermédiaire ou Avancé, intègre régulièrement des exercices de la catégorie "Combo Moves" (enchaînement dribble → tir/finition, comme dans un vrai workout pro type Chris Brickley ou Drew Hanlen) plutôt que de rester sur des répétitions techniques isolées. Utilise aussi la catégorie "Écrans / Jeu sans ballon" (un plot ou une chaise fait office d'écran) pour travailler le jeu sans ballon même en entraînement individuel — un joueur ne joue jamais uniquement en 1v1 avec ballon dans un vrai match. Intègre aussi ponctuellement un exercice de la catégorie "Équilibre / Proprioception", pas seulement pour l'objectif Force & Pliométrie mais aussi comme prévention de blessure générale.
+                12. NIVEAU DE JEU RÉEL, PAS SEULEMENT DES DRILLS ISOLÉS : pour un joueur de niveau Intermédiaire ou Avancé, intègre régulièrement des exercices de la catégorie "Combo Moves" (enchaînement dribble → tir/finition, comme dans un vrai workout pro type Chris Brickley ou Drew Hanlen) plutôt que de rester sur des répétitions techniques isolées. Utilise aussi la catégorie "Écrans / Jeu sans ballon" (un plot ou une chaise fait office d'écran) pour travailler le jeu sans ballon même en entraînement individuel — un joueur ne joue jamais uniquement en 1v1 avec ballon dans un vrai match.
+                13. Les catégories "Équilibre / Proprioception", "Mobilité / Prévention des blessures" et "Conditioning / Endurance spécifique basket" ne sont pas liées uniquement à l'objectif "Force & Pliométrie" : pioche dedans ponctuellement pour n'importe quel joueur (prévention de blessure, endurance de match), même si "Force & Pliométrie" n'est pas sélectionné — dans ce cas, ça reste léger (1 exercice occasionnel), sans consommer de temps dédié au physique.
 
                 Pour chaque séance, décompose les exercices en une LISTE d'objets structurés (pas un seul bloc de texte), chacun avec :
                 - "nom" : le nom précis du drill
