@@ -18,8 +18,10 @@ def demander_a_ia(prompt):
         "messages": [{"role": "user", "content": prompt}]
     }
     try:
-        response = requests.post(API_URL, headers=headers, json=payload, timeout=120)
+        response = requests.post(API_URL, headers=headers, json=payload, timeout=240)
         resultat = response.json()
+        if "choices" not in resultat:
+            return f"ERREUR_IA: L'API Hugging Face a renvoyé une erreur : {resultat.get('error', resultat)}"
         return resultat['choices'][0]['message']['content']
     except requests.exceptions.JSONDecodeError:
         return f"ERREUR_IA: L'API n'a pas renvoyé de réponse exploitable (code HTTP {response.status_code}). Réessaie dans un instant ; si ça persiste, essaie avec moins de semaines ou d'objectifs à la fois.\n\nDétail brut : {response.text[:300]}"
