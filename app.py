@@ -4,6 +4,7 @@ import requests
 import json
 import datetime
 import urllib.parse
+import random
 
 
 st.title("Suivi des joueurs — Prototype")
@@ -481,6 +482,12 @@ if len(st.session_state.equipe) > 0:
                 key=f"jours_semaine_{num_semaine}"
             )
 
+    mode_demo = st.checkbox(
+        "Mode démo (sans IA)",
+        value=False,
+        help="Construit le programme directement depuis la banque de drills, sans aucun appel à l'IA. Utile pour tester l'interface (calendrier, schémas, notes) sans consommer de crédits API. Les descriptions d'exercices sont des placeholders."
+    )
+
     if st.button("Générer le programme"):
         nb_seances_total = sum(len(jours) for jours in jours_par_semaine.values())
         if not objectifs:
@@ -644,6 +651,72 @@ if len(st.session_state.equipe) > 0:
                 f"- {categorie} : {', '.join(liste)}" for categorie, liste in banque_categories.items()
             )
 
+            def drills_des_categories(prefixes):
+                noms = []
+                for categorie, liste in banque_categories.items():
+                    if any(categorie.startswith(prefixe) for prefixe in prefixes):
+                        noms.extend(liste)
+                return noms
+
+            categories_par_objectif = {
+                "Tir": ["Tir", "Combo Moves", "Écrans / Jeu sans ballon"],
+                "Dribble": ["Dribble / Ball Handling", "Combo Moves"],
+                "Finition au panier": ["Finition"],
+                "Défense": ["Défense"]
+            }
+
+            def construire_exercice_demo(nom, series_reps, categorie_affichee, avec_schema):
+                exercice = {
+                    "nom": nom,
+                    "series_reps": series_reps,
+                    "description": f"[Mode démo] Exercice de la catégorie « {categorie_affichee} ». En mode normal, l'IA rédige ici une description détaillée de l'exécution."
+                }
+                if avec_schema:
+                    exercice["schema"] = {
+                        "elements": [
+                            {"type": "joueur", "x": 50, "y": 70, "label": "J"},
+                            {"type": "plot", "x": 35, "y": 60},
+                            {"type": "plot", "x": 65, "y": 60}
+                        ],
+                        "deplacements": [{"de": [50, 70], "vers": [50, 84], "style": "dribble"}]
+                    }
+                return exercice
+
+            def construire_semaine_demo(num_semaine, jours_semaine, deja_utilises_par_jour):
+                echauffements = drills_des_categories(["Échauffement"])
+                exercices_basket = []
+                for objectif in objectifs:
+                    exercices_basket.extend(drills_des_categories(categories_par_objectif.get(objectif, [])))
+                if not exercices_basket:
+                    exercices_basket = drills_des_categories(["Situations de match", "Agilité / Footwork"])
+                exercices_physiques = drills_des_categories(
+                    ["Force & Pliométrie", "Équilibre / Proprioception", "Mobilité / Prévention"]
+                )
+
+                nb_basket = max(2, min(6, (duree_seance - duree_physique) // 12))
+                nb_physique = max(2, duree_physique // 8) if duree_physique else 0
+
+                seances_demo = []
+                for position_jour, nom_jour in enumerate(jours_semaine, start=1):
+                    tirage = random.Random(f"{joueur_programme}|{num_semaine}|{nom_jour}")
+                    deja_pris = set(deja_utilises_par_jour.get(nom_jour, []))
+                    exercices = []
+
+                    disponibles = [nom for nom in echauffements if nom not in deja_pris] or echauffements
+                    exercices.append(construire_exercice_demo(tirage.choice(disponibles), "5 à 10 minutes", "Échauffement", False))
+
+                    disponibles = [nom for nom in exercices_basket if nom not in deja_pris] or exercices_basket
+                    for nom in tirage.sample(disponibles, min(nb_basket, len(disponibles))):
+                        exercices.append(construire_exercice_demo(nom, "3x8 répétitions", "Basket", True))
+
+                    if nb_physique:
+                        disponibles = [nom for nom in exercices_physiques if nom not in deja_pris] or exercices_physiques
+                        for nom in tirage.sample(disponibles, min(nb_physique, len(disponibles))):
+                            exercices.append(construire_exercice_demo(nom, "3x10 répétitions", "Physique", False))
+
+                    seances_demo.append({"semaine": num_semaine, "jour": position_jour, "exercices": exercices})
+                return seances_demo
+
             def construire_prompt_semaine(num_semaine, jours_semaine, historique_texte, exclusions_texte):
                 jours_semaine_texte = ", ".join(jours_semaine)
                 return f"""
@@ -731,19 +804,23 @@ if len(st.session_state.equipe) > 0:
                         lignes_exclusions.append(f"- {jour_nom} : {', '.join(deja_utilises)}")
                 exclusions_texte = "\n".join(lignes_exclusions) if lignes_exclusions else "Aucun exercice interdit (c'est la première fois que ces jours sont générés)."
 
-                with st.spinner(f"Génération de la semaine {num_semaine}/{duree}..."):
-                    reponse_semaine = demander_a_ia(construire_prompt_semaine(num_semaine, jours_semaine, historique_texte, exclusions_texte))
-
-                if reponse_semaine.startswith("ERREUR_IA:"):
-                    erreur_generation = f"Échec à la semaine {num_semaine} : {reponse_semaine}"
-                    break
-
-                try:
-                    seances_semaine = json.loads(nettoyer_json(reponse_semaine))
+                if mode_demo:
+                    seances_semaine = construire_semaine_demo(num_semaine, jours_semaine, deja_utilises_par_jour)
                     seances.extend(seances_semaine)
-                except (json.JSONDecodeError, TypeError):
-                    erreur_generation = f"L'IA n'a pas renvoyé un JSON valide pour la semaine {num_semaine}, réessaie.\n\nRéponse brute : {reponse_semaine[:500]}"
-                    break
+                else:
+                    with st.spinner(f"Génération de la semaine {num_semaine}/{duree}..."):
+                        reponse_semaine = demander_a_ia(construire_prompt_semaine(num_semaine, jours_semaine, historique_texte, exclusions_texte))
+
+                    if reponse_semaine.startswith("ERREUR_IA:"):
+                        erreur_generation = f"Échec à la semaine {num_semaine} : {reponse_semaine}"
+                        break
+
+                    try:
+                        seances_semaine = json.loads(nettoyer_json(reponse_semaine))
+                        seances.extend(seances_semaine)
+                    except (json.JSONDecodeError, TypeError):
+                        erreur_generation = f"L'IA n'a pas renvoyé un JSON valide pour la semaine {num_semaine}, réessaie.\n\nRéponse brute : {reponse_semaine[:500]}"
+                        break
 
                 for seance_semaine in seances_semaine:
                     position_jour = seance_semaine.get("jour", 1)
@@ -775,13 +852,17 @@ if len(st.session_state.equipe) > 0:
                         if isinstance(seance.get("exercices"), str):
                             seance["exercices"] = [{"nom": "Séance", "series_reps": "", "description": seance["exercices"]}]
 
-                    with st.spinner("Recherche des vidéos de démonstration..."):
-                        enrichir_avec_videos(seances)
+                    if not mode_demo:
+                        with st.spinner("Recherche des vidéos de démonstration..."):
+                            enrichir_avec_videos(seances)
 
                     st.session_state.programmes[joueur_programme] = pd.DataFrame(seances)
                     sauvegarder_programme(joueur_programme, seances)
                     st.session_state.seance_selectionnee.pop(joueur_programme, None)
-                    st.success("Programme généré et sauvegardé !")
+                    if mode_demo:
+                        st.success("Programme de démo généré et sauvegardé (sans IA — les descriptions sont des placeholders).")
+                    else:
+                        st.success("Programme généré et sauvegardé !")
                 except (TypeError, KeyError):
                     st.error("Le programme généré a une structure inattendue, réessaie.")
 
